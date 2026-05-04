@@ -4,29 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>South Lofts | Executive Investment Calculator</title>
+    
+    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    
+    <!-- Select2 -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
     <style>
-        :root {
+        :root { 
             --color-nor-de-vigne: #3D3935;
             --color-egyptian-earth: #B46B4A;
             --color-emerald-green: #004D40;
             --color-wasabi: #8FB67E;
             --pci-cream: #FDFBF7;
         }
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--pci-cream);
+        
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: var(--pci-cream); 
             color: var(--color-nor-de-vigne);
         }
+
         .exec-card {
             background: white;
             border: 1px solid rgba(255, 255, 255, 0.8);
@@ -34,32 +40,33 @@
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
+        
         .exec-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.12);
         }
-        input,
-        select {
+
+        input, select {
             background-color: #F8FAFC;
             border: 1px solid #E2E8F0;
             color: var(--color-nor-de-vigne);
             transition: all 0.3s;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
         }
-        input:focus,
-        select:focus {
+        input:focus, select:focus {
             border-color: var(--color-emerald-green);
             background-color: white;
             outline: none;
             box-shadow: 0 0 0 3px rgba(0, 77, 64, 0.1);
         }
+
         .select2-container .select2-selection--single {
             height: 52px;
             background: #F8FAFC;
             border: 1px solid #E2E8F0;
             border-radius: 12px;
             padding-top: 10px;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
         }
         .select2-container--default .select2-selection--single .select2-selection__rendered {
             color: var(--color-nor-de-vigne);
@@ -70,432 +77,46 @@
             background: white;
             color: var(--color-nor-de-vigne);
             border: 1px solid #E2E8F0;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
         }
         .select2-results__option--highlighted {
             background: var(--color-emerald-green) !important;
             color: white !important;
         }
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.05);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: var(--color-egyptian-earth);
-            border-radius: 10px;
-        }
-        .row-milestone {
-            background: #FEF3E5;
-            border-left: 4px solid var(--color-egyptian-earth);
-        }
-        .row-balloon {
-            background: #F0FDF4;
-            border-left: 4px solid var(--color-wasabi);
-        }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+        ::-webkit-scrollbar-thumb { background: var(--color-egyptian-earth); border-radius: 10px; }
 
-        /* === APPROVED PDF TEMPLATE STYLES (merged exactly as provided) === */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        .page {
-            position: relative;
-            width: 100%;
-            max-width: 1200px;
-            aspect-ratio: 1.414 / 1;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.1);
-        }
-        .page-1 { background-color: #101918; }
-        .pg1-doodle-img {
-            position: absolute;
-            top: 227px;
-            left: 0;
-            width: 100%;
-            height: 53%;
-            object-fit: cover;
-            z-index: 1;
-            pointer-events: none;
-        }
-        .pci-logo {
-            position: absolute;
-            top: 8%;
-            left: 8%;
-            width: 220px;
-            height: auto;
-            z-index: 2;
-        }
-        .center-content {
-            position: absolute;
-            top: 50%;
-            left: 8%;
-            transform: translateY(-50%);
-            display: flex;
-            flex-direction: column;
-            width: 60%;
-            max-width: 700px;
-            z-index: 2;
-        }
-        .southloft-logo {
-            width: 100%;
-            height: auto;
-            margin-bottom: 12px;
-        }
-        .subtitle {
-            color: #C16E38;
-            font-size: 1.25rem;
-            font-weight: 700;
-            letter-spacing: 2.5px;
-            text-transform: uppercase;
-            padding-left: 4px;
-        }
-        .bottom-left-content {
-            position: absolute;
-            bottom: 8%;
-            left: 8%;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            z-index: 2;
-        }
-        .sales-offer {
-            color: #7A9B76;
-            font-size: 1.15rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-            margin-bottom: 4px;
-        }
-        .details {
-            color: #B5B7B6;
-            font-size: 1.1rem;
-            font-weight: 400;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-        .page-2 { background-color: #efefef; }
-        .pg2-doodle-img {
-            position: absolute;
-            bottom: -108px;
-            left: -118px;
-            height: 72%;
-            width: auto;
-            z-index: 1;
-            pointer-events: none;
-        }
-        .pg2-left-col {
-            position: absolute;
-            top: 8%;
-            left: 8%;
-            width: 45%;
-            height: 80%;
-            display: flex;
-            flex-direction: column;
-            z-index: 2;
-        }
-        .southloft-logo-dark {
-            width: 55%;
-            height: auto;
-            margin-bottom: 8px;
-            filter: brightness(0) saturate(100%) invert(26%) sepia(16%) saturate(1478%) hue-rotate(107deg) brightness(94%) contrast(89%);
-        }
-        .pg2-subtitle {
-            color: #C16E38;
-            font-size: 0.8rem;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            padding-left: 2px;
-            margin-bottom: 30px;
-        }
-        .table-container {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-        }
-        .table-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1.5px solid #A9C2B5;
-            padding: 2.2% 0;
-        }
-        .table-label {
-            color: #2D5546;
-            font-weight: 700;
-            font-size: 1.05rem;
-            width: 45%;
-        }
-        .table-value {
-            color: #333333;
-            font-weight: 400;
-            font-size: 1.05rem;
-            width: 55%;
-        }
-        .pg2-right-img {
-            position: absolute;
-            top: 5%;
-            right: 4%;
-            height: 85%;
-            width: auto;
-            object-fit: contain;
-            z-index: 2;
-        }
-        .pg2-footer {
-            position: absolute;
-            bottom: 4%;
-            left: 5%;
-            right: 5%;
-            border-top: 1.5px solid #2D5546;
-            padding-top: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            z-index: 2;
-        }
-        .footer-legal {
-            font-size: 0.55rem;
-            color: #333333;
-            width: 70%;
-            line-height: 1.4;
-        }
-        .footer-date {
-            font-size: 0.9rem;
-            color: #000000;
-            font-weight: 700;
-            display: flex;
-            align-items: flex-end;
-            margin-top: 5px;
-        }
-        .date-line {
-            display: inline-block;
-            width: 120px;
-            border-bottom: 1px solid #000000;
-            margin-left: 8px;
-        }
-        .page-3 {
-            background-color: #0d362e;
-            color: #ffffff;
-        }
-        .pg3-doodle-img {
-            position: absolute;
-            top: 220px;
-            left: 0;
-            width: 100%;
-            height: 60%;
-            object-fit: cover;
-            z-index: 1;
-            pointer-events: none;
-            opacity: 0.3;
-        }
-        .pg3-header {
-            position: absolute;
-            top: 6%;
-            left: 6%;
-            right: 6%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 2;
-        }
-        .pg3-title {
-            font-size: 2.2rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-        .pg3-logo {
-            width: 200px;
-            height: auto;
-        }
-        .pg3-content {
-            position: absolute;
-            top: 15%;
-            left: 6%;
-            right: 6%;
-            z-index: 2;
-        }
-        .pg3-table {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-        .pg3-tr {
-            display: flex;
-            border-bottom: 1px solid #A9C2B5;
-            padding: 1.3% 0;
-            align-items: flex-start;
-        }
-        .pg3-tr.header {
-            border-bottom: 2px solid #A9C2B5;
-            color: #A9C2B5;
-            font-weight: 700;
-            font-size: 0.95rem;
-            padding-bottom: 1%;
-        }
-        .pg3-col-1 { width: 22%; font-weight: 700; }
-        .pg3-col-2 { width: 12%; }
-        .pg3-col-3 { width: 28%; }
-        .pg3-col-4 { width: 24%; }
-        .pg3-col-5 { width: 14%; }
-        .sub-text {
-            display: block;
-            font-size: 0.75rem;
-            font-weight: 400;
-            margin-top: 4px;
-            color: #A9C2B5;
-        }
-        .pg3-bank-section {
-            display: flex;
-            margin-top: 2%;
-            font-size: 0.65rem;
-            line-height: 1.3;
-        }
-        .bank-block {
-            display: flex;
-            flex-direction: column;
-        }
-        .bank-block.left { width: 34%; padding-right: 20px; }
-        .bank-block.right { width: 66%; }
-        .bank-block-title {
-            color: #A9C2B5;
-            font-weight: 700;
-            margin-bottom: 4px;
-            text-transform: uppercase;
-        }
-        .b-label {
-            color: #A9C2B5;
-            font-weight: 700;
-            margin-top: 5px;
-        }
-        .b-label:first-child { margin-top: 0; }
-        .b-val { color: #ffffff; }
-        .pg3-footer {
-            position: absolute;
-            bottom: 4%;
-            left: 6%;
-            right: 6%;
-            border-top: 1.5px solid #A9C2B5;
-            padding-top: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            z-index: 2;
-        }
-        .pg3-footer-legal {
-            font-size: 0.55rem;
-            color: #ffffff;
-            width: 70%;
-            line-height: 1.4;
-        }
-        .pg3-footer-date {
-            font-size: 0.9rem;
-            color: #A9C2B5;
-            font-weight: 700;
-            display: flex;
-            align-items: flex-end;
-            margin-top: 5px;
-        }
-        .pg3-date-line {
-            display: inline-block;
-            width: 120px;
-            border-bottom: 1px solid #A9C2B5;
-            margin-left: 8px;
-        }
-        .page-4 {
-            background-color: #0d362e;
-            color: #ffffff;
-        }
-        .pg4-content {
-            position: absolute;
-            top: 15%;
-            left: 6%;
-            right: 6%;
-            bottom: 11%;
-            z-index: 2;
-            display: flex;
-            flex-direction: column;
-        }
-        .pg4-tables-wrapper {
-            display: flex;
-            width: 100%;
-            height: 100%;
-        }
-        .pg4-table {
-            display: flex;
-            flex-direction: column;
-        }
-        .pg4-table.left-table {
-            width: 50%;
-            border-right: 1px solid #A9C2B5;
-            padding-right: 2%;
-        }
-        .pg4-table.right-table {
-            width: 50%;
-            padding-left: 2%;
-        }
-        .pg4-tr {
-            display: flex;
-            border-bottom: 1px solid #A9C2B5;
-            flex: 1;
-            font-size: 0.7rem;
-            align-items: center;
-        }
-        .pg4-tr.header {
-            border-bottom: 2px solid #A9C2B5;
-            color: #A9C2B5;
-            font-weight: 700;
-            font-size: 0.75rem;
-            flex: 0 0 auto;
-            padding: 1% 0 1.5% 0;
-        }
-        .pg4-c1 { width: 22%; font-weight: 700; text-transform: uppercase; }
-        .pg4-c2 { width: 44%; }
-        .pg4-c3 { width: 20%; }
-        .pg4-c4 { width: 14%; text-align: center; }
-        @media (max-width: 768px) {
-            .pci-logo { width: 150px; }
-            .sales-offer { font-size: 0.9rem; }
-            .details { font-size: 0.85rem; }
-            .table-label, .table-value { font-size: 0.85rem; }
-            .pg2-subtitle { font-size: 0.65rem; }
-            .footer-legal, .pg3-footer-legal { font-size: 0.45rem; }
-            .footer-date, .pg3-footer-date { font-size: 0.75rem; }
-            .pg3-title { font-size: 1.2rem; }
-            .pg3-logo { width: 120px; }
-            .pg3-tr { font-size: 0.7rem; }
-            .pg3-bank-section { font-size: 0.6rem; flex-direction: column; gap: 10px; margin-top: 10px;}
-            .bank-block.left, .bank-block.right { width: 100%; padding-right: 0;}
-            .pg4-tables-wrapper { flex-direction: column; }
-            .pg4-table.left-table { width: 100%; border-right: none; padding-right: 0; border-bottom: 1px solid #A9C2B5; margin-bottom: 10px;}
-            .pg4-table.right-table { width: 100%; padding-left: 0; }
-            .pg4-tr { font-size: 0.55rem; padding: 1.5% 0; flex: 0 0 auto; }
-        }
+        .row-milestone { background: #FEF3E5; border-left: 4px solid var(--color-egyptian-earth); }
+        .row-balloon { background: #F0FDF4; border-left: 4px solid var(--color-wasabi); }
     </style>
 </head>
 <body class="min-h-screen">
+
     <div class="max-w-[1600px] mx-auto p-4 lg:p-8">
+        
+        <!-- Header -->
         <header class="flex justify-between items-center mb-10 border-b border-slate-200 pb-6">
             <div>
-                <h1 class="text-3xl font-black tracking-tight" style="color: var(--color-nor-de-vigne);">SOUTH LOFTS
-                </h1>
-                <p class="text-xs font-bold tracking-[0.2em] mt-1" style="color: var(--color-emerald-green);">PREMIER
-                    CHOICE INTERNATIONAL</p>
+                <h1 class="text-3xl font-black tracking-tight" style="color: var(--color-nor-de-vigne);">SOUTH LOFTS</h1>
+                <p class="text-xs font-bold tracking-[0.2em] mt-1" style="color: var(--color-emerald-green);">PREMIER CHOICE INTERNATIONAL</p>
             </div>
             <div class="text-right">
                 <p class="text-[10px] font-bold text-slate-400 tracking-[0.3em]">FOR INTERNAL USE ONLY</p>
-                <p class="text-xs font-bold mt-1" style="color: var(--color-egyptian-earth);">INVESTMENT SUMMARY
-                    CALCULATOR</p>
+                <p class="text-xs font-bold mt-1" style="color: var(--color-egyptian-earth);">INVESTMENT SUMMARY CALCULATOR</p>
             </div>
         </header>
+
         <main class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- LEFT: CONTROLS -->
             <div class="lg:col-span-4 space-y-6">
+                
+                <!-- Unit Selection -->
                 <section class="exec-card p-8 space-y-6">
-                    <h2 class="text-sm font-black uppercase tracking-widest border-b pb-4"
-                        style="color: var(--color-emerald-green); border-color: rgba(0,77,64,0.1);">Inventory Search
-                    </h2>
+                    <h2 class="text-sm font-black uppercase tracking-widest border-b pb-4" style="color: var(--color-emerald-green); border-color: rgba(0,77,64,0.1);">Inventory Search</h2>
+                    
                     <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-2">
                             <label class="text-[10px] font-black text-slate-500 uppercase">Floor</label>
@@ -506,103 +127,96 @@
                             <select id="filter-type" class="w-full p-3 rounded-xl text-xs font-bold"></select>
                         </div>
                     </div>
+
                     <div class="space-y-2">
                         <label class="text-[10px] font-black text-slate-500 uppercase">Select Unit</label>
                         <select id="unit-select" class="w-full rounded-xl"></select>
                     </div>
+
                     <div id="unit-specs" class="grid grid-cols-2 gap-3 opacity-50 transition-opacity duration-500">
                         <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
                             <p class="text-[9px] font-bold text-slate-400 uppercase">Net Area</p>
-                            <p class="text-lg font-black" style="color: var(--color-nor-de-vigne);"><span
-                                    id="spec-area">0</span> <span class="text-[9px] font-normal">SQFT</span></p>
+                            <p class="text-lg font-black" style="color: var(--color-nor-de-vigne);"><span id="spec-area">0</span> <span class="text-[9px] font-normal">SQFT</span></p>
                         </div>
                         <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
                             <p class="text-[9px] font-bold text-slate-400 uppercase">Category</p>
-                            <p id="spec-type" class="text-lg font-black uppercase"
-                                style="color: var(--color-nor-de-vigne);">-</p>
+                            <p id="spec-type" class="text-lg font-black uppercase" style="color: var(--color-nor-de-vigne);">-</p>
                         </div>
                     </div>
                 </section>
+
+                <!-- Proposal Options -->
                 <section class="exec-card p-8 space-y-6">
-                    <h2 class="text-sm font-black uppercase tracking-widest border-b pb-4"
-                        style="color: var(--color-emerald-green); border-color: rgba(0,77,64,0.1);">Financial Parameters
-                    </h2>
+                    <h2 class="text-sm font-black uppercase tracking-widest border-b pb-4" style="color: var(--color-emerald-green); border-color: rgba(0,77,64,0.1);">Financial Parameters</h2>
+                    
                     <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-2">
                             <label class="text-[10px] font-black text-slate-500 uppercase">Discount %</label>
-                            <input type="number" id="input-discount" value="0"
-                                class="w-full p-4 rounded-xl text-xs font-bold text-center">
+                            <input type="number" id="input-discount" value="0" class="w-full p-4 rounded-xl text-xs font-bold text-center">
                         </div>
                         <div class="space-y-2">
                             <label class="text-[10px] font-black text-slate-500 uppercase">Balloon Amt (AED)</label>
-                            <input type="number" id="input-balloon" value="25000"
-                                class="w-full p-4 rounded-xl text-xs font-bold text-center"
-                                style="color: var(--color-egyptian-earth);">
+                            <input type="number" id="input-balloon" value="25000" class="w-full p-4 rounded-xl text-xs font-bold text-center" style="color: var(--color-egyptian-earth);">
                         </div>
                     </div>
+
                     <div class="space-y-3">
                         <label class="text-[10px] font-black text-slate-500 uppercase">Payment Plan Structure</label>
-                        <select id="plan-mode"
-                            class="w-full p-4 rounded-xl text-[10px] font-black uppercase tracking-widest text-white"
-                            style="background: var(--color-nor-de-vigne);">
+                        <select id="plan-mode" class="w-full p-4 rounded-xl text-[10px] font-black uppercase tracking-widest text-white" style="background: var(--color-nor-de-vigne);">
                             <option value="7030">Regular 70/30 Plan</option>
                             <option value="6040">Post-Handover 60/40 Plan</option>
                         </select>
                     </div>
+
                     <div class="space-y-4 pt-4 border-t border-slate-100">
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-bold text-slate-600">Fully Furnished</span>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="toggle-furnish" class="sr-only peer" checked>
-                                <div
-                                    class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8FB67E]">
-                                </div>
+                                <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8FB67E]"></div>
                             </label>
                         </div>
-                        <div id="pool-container"
-                            class="flex items-center justify-between opacity-50 pointer-events-none transition-all">
+                        
+                        <div id="pool-container" class="flex items-center justify-between opacity-50 pointer-events-none transition-all">
                             <span class="text-xs font-bold text-slate-600">Private Pool (+100k)</span>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="toggle-pool" class="sr-only peer">
-                                <div
-                                    class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#004D40]">
-                                </div>
+                                <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#004D40]"></div>
                             </label>
                         </div>
                     </div>
                 </section>
             </div>
+
+            <!-- RIGHT: DASHBOARD & SCHEDULE -->
             <div class="lg:col-span-8 space-y-8">
+                
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="exec-card p-8 border-l-4" style="border-color: var(--color-egyptian-earth);">
                         <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Net Investment</p>
-                        <h2 id="dash-net" class="text-3xl font-black mt-2" style="color: var(--color-egyptian-earth);">
-                            AED 0</h2>
+                        <h2 id="dash-net" class="text-3xl font-black mt-2" style="color: var(--color-egyptian-earth);">AED 0</h2>
                     </div>
+                    
                     <div class="exec-card p-8 border-l-4" style="border-color: var(--color-emerald-green);">
                         <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Initial Liquidity</p>
-                        <h2 id="dash-dp" class="text-3xl font-black mt-2" style="color: var(--color-emerald-green);">AED
-                            0</h2>
+                        <h2 id="dash-dp" class="text-3xl font-black mt-2" style="color: var(--color-emerald-green);">AED 0</h2>
                     </div>
+                    
                     <div class="exec-card p-8 border-l-4" style="border-color: var(--color-wasabi);">
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Monthly Installment
-                        </p>
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Monthly Installment</p>
                         <h2 id="dash-monthly" class="text-3xl font-black mt-2" style="color: #5A8A4D;">AED 0</h2>
                     </div>
                 </div>
+
                 <div class="exec-card rounded-2xl overflow-hidden border border-slate-100">
                     <div class="p-6 flex justify-between items-center border-b border-slate-100 bg-white">
-                        <h3 class="text-[11px] font-black uppercase tracking-[0.2em]"
-                            style="color: var(--color-nor-de-vigne);">Payment Schedule Analysis</h3>
-                        <span id="badge-plan"
-                            class="text-[8px] px-4 py-1.5 rounded-full font-black uppercase tracking-widest text-white"
-                            style="background: var(--color-emerald-green);">70/30</span>
+                        <h3 class="text-[11px] font-black uppercase tracking-[0.2em]" style="color: var(--color-nor-de-vigne);">Payment Schedule Analysis</h3>
+                        <span id="badge-plan" class="text-[8px] px-4 py-1.5 rounded-full font-black uppercase tracking-widest text-white" style="background: var(--color-emerald-green);">70/30</span>
                     </div>
                     <div class="overflow-y-auto max-h-[60vh]">
                         <table class="w-full text-left">
                             <thead class="bg-slate-50 sticky top-0 z-10">
-                                <tr
-                                    class="text-[9px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-100">
+                                <tr class="text-[9px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-100">
                                     <th class="p-5 w-28">Timeline</th>
                                     <th class="p-5">Milestone Description</th>
                                     <th class="p-5 text-right w-40">Amount (AED)</th>
@@ -612,10 +226,9 @@
                         </table>
                     </div>
                 </div>
+
                 <div class="flex justify-end gap-4">
-                    <button id="btn-pdf"
-                        class="px-10 py-4 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg text-white transition-all duration-300 hover:shadow-xl hover:scale-[1.02]"
-                        style="background: var(--color-egyptian-earth);">
+                    <button id="btn-pdf" class="px-10 py-4 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg text-white transition-all duration-300 hover:shadow-xl hover:scale-[1.02]" style="background: var(--color-egyptian-earth);">
                         Generate Executive PDF
                     </button>
                 </div>
@@ -623,741 +236,729 @@
         </main>
     </div>
 
-    <div id="pdf-template" style="display: none;">
-        <div class="page page-1">
-            <img src="Background_doodle.png" alt="" class="pg1-doodle-img">
-            <img src="PCI_Logo.png" alt="Premier Choice Logo" class="pci-logo">
-            <div class="center-content">
-                <img src="SouthLoft_Logo.png" alt="Southlofts Logo" class="southloft-logo">
-            </div>
-            <div class="bottom-left-content">
-                <div class="sales-offer">SALES OFFER</div>
-                <div class="details" id="pdf-page1-date">DD/MM/YYYY</div>
-                <div class="details" id="pdf-page1-plan">PAYMENT PLAN TYPE</div>
-            </div>
-        </div>
-
-        <div class="page page-2">
-            <img src="Page_2_bg_doodle.png" alt="" class="pg2-doodle-img">
-            <div class="pg2-left-col">
-                <img src="SouthLoft_Logo.png" alt="Southlofts Logo" class="southloft-logo-dark">
-                <div class="table-container">
-                    <div class="table-row">
-                        <div class="table-label">Prepared For</div>
-                        <div class="table-value" id="pdf-prepared-for"></div>
-                    </div>
-                    <div class="table-row">
-                        <div class="table-label">Issue Date</div>
-                        <div class="table-value" id="pdf-issue-date"></div>
-                    </div>
-                    <div class="table-row">
-                        <div class="table-label">Total Investment</div>
-                        <div class="table-value" id="pdf-total-investment"></div>
-                    </div>
-                    <div class="table-row">
-                        <div class="table-label">Payment Plan Type</div>
-                        <div class="table-value" id="pdf-plan-type"></div>
-                    </div>
-                    <div class="table-row">
-                        <div class="table-label">Unit No.</div>
-                        <div class="table-value" id="pdf-unit-no"></div>
-                    </div>
-                    <div class="table-row">
-                        <div class="table-label">Unit Type</div>
-                        <div class="table-value" id="pdf-unit-type"></div>
-                    </div>
-                    <div class="table-row">
-                        <div class="table-label">Purchase Price</div>
-                        <div class="table-value" id="pdf-purchase-price"></div>
-                    </div>
-                    <div class="table-row">
-                        <div class="table-label">Furnishing</div>
-                        <div class="table-value" id="pdf-furnishing"></div>
-                    </div>
-                    <div class="table-row">
-                        <div class="table-label">Floor</div>
-                        <div class="table-value" id="pdf-floor"></div>
-                    </div>
-                    <div class="table-row">
-                        <div class="table-label">Total Area</div>
-                        <div class="table-value" id="pdf-total-area"></div>
-                    </div>
-                    <div class="table-row">
-                        <div class="table-label">Private Pool</div>
-                        <div class="table-value" id="pdf-private-pool"></div>
-                    </div>
-                    <div class="table-row">
-                        <div class="table-label">Offer Validity</div>
-                        <div class="table-value" id="pdf-offer-validity"></div>
-                    </div>
-                </div>
-            </div>
-            <img src="Pg_2_Right.png" alt="Floor Plan / Render" class="pg2-right-img">
-            <div class="pg2-footer">
-                <div class="footer-legal">
-                    The information in this document is strictly confidential and intended for the addressee only. The payment schedules and unit pricing provided by Southlofts are remains valid for two weeks from the date of delivery and proprietary. Southlofts reserves the right to amend the terms, pricing, and availability without prior notice. This document is for informational purposes and does not create a binding legal obligation until a formal Sales and Purchase Agreement (SPA) is signed by all parties.
-                </div>
-                <div class="footer-date">
-                    Date of Issue: <span class="date-line"></span>
-                </div>
-            </div>
-        </div>
-
-        <div class="page page-3">
-            <img src="Background_doodle.png" alt="" class="pg3-doodle-img">
-            <div class="pg3-header">
-                <div class="pg3-title" id="pdf-page3-plan-title">60 | 40 PAYMENT PLAN</div>
-                <div style="text-align: right;">
-                    <img src="SouthLoft_Logo.png" alt="Southlofts Logo" class="pg3-logo">
-                </div>
-            </div>
-            <div class="pg3-content">
-                <div class="pg3-table" id="pdf-page3-table">
-                    </div>
-                <div class="pg3-bank-section">
-                    <div class="bank-block left">
-                        <div class="b-label">Bank</div>
-                        <div class="b-val">United Bank Limited (UBL)</div>
-                        <div class="b-label">Account Title</div>
-                        <div class="b-val">ESCROW ACCOUNT GATEWAY BY PREMIERCHOICE</div>
-                        <div class="b-label">Account Number</div>
-                        <div class="b-val">200770307</div>
-                        <div class="b-label">IBAN</div>
-                        <div class="b-val">AE090470000000200770307</div>
-                        <div class="b-label">Swift Code</div>
-                        <div class="b-val">UNILAEAD</div>
-                        <div class="b-label">Branch</div>
-                        <div class="b-val">Deira, Dubai</div>
-                    </div>
-                    <div class="bank-block right">
-                        <div class="bank-block-title">FOR 4% DLD AND ADMIN FEE</div>
-                        <div class="b-label">Bank</div>
-                        <div class="b-val">Abu Dhabi Commercial Bank</div>
-                        <div class="b-label">Account Title</div>
-                        <div class="b-val">PCI REAL ESTATE DEVELOPERS LLC</div>
-                        <div class="b-label">IBAN</div>
-                        <div class="b-val">AE770030010031001994462</div>
-                        <div class="b-label">Swift Code</div>
-                        <div class="b-val">ADCBAEAA</div>
-                    </div>
-                </div>
-            </div>
-            <div class="pg3-footer">
-                <div class="pg3-footer-legal">
-                    The information in this document is strictly confidential and intended for the addressee only. The payment schedules and unit pricing provided by Southlofts are remains valid for two weeks from the date of delivery and proprietary. Southlofts reserves the right to amend the terms, pricing, and availability without prior notice. This document is for informational purposes and does not create a binding legal obligation until a formal Sales and Purchase Agreement (SPA) is signed by all parties.
-                </div>
-                <div class="pg3-footer-date">
-                    Date of Issue: <span class="pg3-date-line"></span>
-                </div>
-            </div>
-        </div>
-
-        <div class="page page-4">
-            <img src="Background_doodle.png" alt="" class="pg3-doodle-img">
-            <div class="pg3-header">
-                <div class="pg3-title">DETAILED PAYMENT PLAN</div>
-                <div style="text-align: right;">
-                    <img src="SouthLoft_Logo.png" alt="Southlofts Logo" class="pg3-logo">
-                </div>
-            </div>
-            <div class="pg4-content">
-                <div class="pg4-tables-wrapper">
-                    <div class="pg4-table left-table" id="pdf-page4-left">
-                        </div>
-                    <div class="pg4-table right-table" id="pdf-page4-right">
-                        </div>
-                </div>
-            </div>
-            <div class="pg3-footer">
-                <div class="pg3-footer-legal">
-                    The information in this document is strictly confidential and intended for the addressee only. The payment schedules and unit pricing provided by Southlofts are remains valid for two weeks from the date of delivery and proprietary. Southlofts reserves the right to amend the terms, pricing, and availability without prior notice. This document is for informational purposes and does not create a binding legal obligation until a formal Sales and Purchase Agreement (SPA) is signed by all parties.
-                </div>
-                <div class="pg3-footer-date">
-                    Date of Issue: <span class="pg3-date-line"></span>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script>
-        // ==========================================
-        // 1. MASTER INVENTORY DATABASE (unchanged)
-        // ==========================================
-        const INVENTORY = [
-            // FLOOR 1
-            { "u": "101", "floor": "1", "type": "C", "area": 360.59, "reg": 645000, "post": 715000, "pool": false },
-            { "u": "102", "floor": "1", "type": "C", "area": 363.07, "reg": 645000, "post": 715000, "pool": false },
-            { "u": "103", "floor": "1", "type": "C", "area": 350.04, "reg": 645000, "post": 715000, "pool": false },
-            { "u": "104", "floor": "1", "type": "A (Flex)", "area": 522.16, "reg": 899000, "post": 975000, "pool": true },
-            { "u": "105", "floor": "1", "type": "A (Flex)", "area": 861.54, "reg": 999000, "post": 1100000, "pool": true },
-            { "u": "106", "floor": "1", "type": "C", "area": 351.12, "reg": 645000, "post": 715000, "pool": false },
-            { "u": "107", "floor": "1", "type": "C", "area": 353.81, "reg": 645000, "post": 715000, "pool": false },
-            { "u": "108", "floor": "1", "type": "C", "area": 352.84, "reg": 645000, "post": 715000, "pool": false },
-            { "u": "109", "floor": "1", "type": "E (Flex)", "area": 504.72, "reg": 849000, "post": 935000, "pool": false },
-            { "u": "110", "floor": "1", "type": "D", "area": 326.68, "reg": 620000, "post": 690000, "pool": false },
-            { "u": "111", "floor": "1", "type": "D", "area": 325.72, "reg": 620000, "post": 690000, "pool": false },
-            { "u": "112", "floor": "1", "type": "E (Flex)", "area": 504.61, "reg": 849000, "post": 935000, "pool": false },
-            { "u": "113", "floor": "1", "type": "C", "area": 346.71, "reg": 645000, "post": 715000, "pool": false },
-            { "u": "114", "floor": "1", "type": "C", "area": 340.79, "reg": 645000, "post": 715000, "pool": false },
-            { "u": "115", "floor": "1", "type": "C", "area": 350.47, "reg": 645000, "post": 715000, "pool": false },
-            { "u": "116", "floor": "1", "type": "B (Flex)", "area": 385.78, "reg": 699000, "post": 775000, "pool": true },
-            { "u": "117", "floor": "1", "type": "C", "area": 354.99, "reg": 645000, "post": 715000, "pool": false },
-            { "u": "118", "floor": "1", "type": "D", "area": 315.06, "reg": 620000, "post": 690000, "pool": false },
-            { "u": "119", "floor": "1", "type": "D", "area": 319.9, "reg": 620000, "post": 690000, "pool": false },
-            { "u": "120", "floor": "1", "type": "D", "area": 313.88, "reg": 620000, "post": 690000, "pool": false },
-            { "u": "121", "floor": "1", "type": "D", "area": 318.83, "reg": 620000, "post": 690000, "pool": false },
-            { "u": "122", "floor": "1", "type": "D", "area": 321.73, "reg": 620000, "post": 690000, "pool": false },
-            { "u": "123", "floor": "1", "type": "D", "area": 326.68, "reg": 620000, "post": 690000, "pool": false },
-            { "u": "124", "floor": "1", "type": "E (Flex)", "area": 536.15, "reg": 875000, "post": 975000, "pool": false },
-            // FLOOR 2
-            { "u": "201", "floor": "2", "type": "C", "area": 360.59, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "202", "floor": "2", "type": "C", "area": 363.07, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "203", "floor": "2", "type": "C", "area": 349.93, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "204", "floor": "2", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
-            { "u": "205", "floor": "2", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
-            { "u": "206", "floor": "2", "type": "C", "area": 351.12, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "207", "floor": "2", "type": "C", "area": 353.81, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "208", "floor": "2", "type": "C", "area": 352.84, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "209", "floor": "2", "type": "E (Flex)", "area": 504.83, "reg": 775000, "post": 850000, "pool": false },
-            { "u": "210", "floor": "2", "type": "D", "area": 326.58, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "211", "floor": "2", "type": "D", "area": 325.93, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "212", "floor": "2", "type": "E (Flex)", "area": 504.61, "reg": 775000, "post": 850000, "pool": false },
-            { "u": "213", "floor": "2", "type": "C", "area": 346.71, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "214", "floor": "2", "type": "C", "area": 340.79, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "215", "floor": "2", "type": "C", "area": 350.47, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "216", "floor": "2", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
-            { "u": "217", "floor": "2", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
-            { "u": "218", "floor": "2", "type": "C", "area": 354.99, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "219", "floor": "2", "type": "D", "area": 314.95, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "220", "floor": "2", "type": "D", "area": 319.9, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "221", "floor": "2", "type": "D", "area": 313.88, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "222", "floor": "2", "type": "D", "area": 318.83, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "223", "floor": "2", "type": "D", "area": 321.73, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "224", "floor": "2", "type": "D", "area": 326.68, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "225", "floor": "2", "type": "E (Flex)", "area": 536.15, "reg": 799000, "post": 890000, "pool": false },
-            // FLOOR 3
-            { "u": "301", "floor": "3", "type": "C", "area": 360.59, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "302", "floor": "3", "type": "C", "area": 363.07, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "303", "floor": "3", "type": "C", "area": 349.93, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "304", "floor": "3", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
-            { "u": "305", "floor": "3", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
-            { "u": "306", "floor": "3", "type": "C", "area": 351.12, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "307", "floor": "3", "type": "C", "area": 353.81, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "308", "floor": "3", "type": "C", "area": 352.84, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "309", "floor": "3", "type": "E (Flex)", "area": 504.83, "reg": 775000, "post": 850000, "pool": false },
-            { "u": "310", "floor": "3", "type": "D", "area": 326.58, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "311", "floor": "3", "type": "D", "area": 325.93, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "312", "floor": "3", "type": "E (Flex)", "area": 504.61, "reg": 775000, "post": 850000, "pool": false },
-            { "u": "313", "floor": "3", "type": "C", "area": 346.71, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "314", "floor": "3", "type": "C", "area": 340.79, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "315", "floor": "3", "type": "C", "area": 350.47, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "316", "floor": "3", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
-            { "u": "317", "floor": "3", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
-            { "u": "318", "floor": "3", "type": "C", "area": 354.99, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "319", "floor": "3", "type": "D", "area": 314.95, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "320", "floor": "3", "type": "D", "area": 319.9, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "321", "floor": "3", "type": "D", "area": 313.88, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "322", "floor": "3", "type": "D", "area": 318.83, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "323", "floor": "3", "type": "D", "area": 321.73, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "324", "floor": "3", "type": "D", "area": 326.68, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "325", "floor": "3", "type": "E (Flex)", "area": 536.15, "reg": 799000, "post": 890000, "pool": false },
-            // FLOOR 4
-            { "u": "401", "floor": "4", "type": "C", "area": 360.59, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "402", "floor": "4", "type": "C", "area": 363.07, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "403", "floor": "4", "type": "C", "area": 349.93, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "404", "floor": "4", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
-            { "u": "405", "floor": "4", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
-            { "u": "406", "floor": "4", "type": "C", "area": 351.12, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "407", "floor": "4", "type": "C", "area": 353.81, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "408", "floor": "4", "type": "C", "area": 352.84, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "409", "floor": "4", "type": "E (Flex)", "area": 504.83, "reg": 775000, "post": 850000, "pool": false },
-            { "u": "410", "floor": "4", "type": "D", "area": 326.58, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "411", "floor": "4", "type": "D", "area": 325.93, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "412", "floor": "4", "type": "E (Flex)", "area": 504.61, "reg": 775000, "post": 850000, "pool": false },
-            { "u": "413", "floor": "4", "type": "C", "area": 346.71, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "414", "floor": "4", "type": "C", "area": 340.79, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "415", "floor": "4", "type": "C", "area": 350.47, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "416", "floor": "4", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
-            { "u": "417", "floor": "4", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
-            { "u": "418", "floor": "4", "type": "C", "area": 354.99, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "419", "floor": "4", "type": "D", "area": 314.95, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "420", "floor": "4", "type": "D", "area": 319.9, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "421", "floor": "4", "type": "D", "area": 313.88, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "422", "floor": "4", "type": "D", "area": 318.83, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "423", "floor": "4", "type": "D", "area": 321.73, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "424", "floor": "4", "type": "D", "area": 326.68, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "425", "floor": "4", "type": "E (Flex)", "area": 536.15, "reg": 799000, "post": 890000, "pool": false },
-            // FLOOR 5
-            { "u": "501", "floor": "5", "type": "C", "area": 360.59, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "502", "floor": "5", "type": "C", "area": 363.07, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "503", "floor": "5", "type": "C", "area": 349.93, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "504", "floor": "5", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
-            { "u": "505", "floor": "5", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
-            { "u": "506", "floor": "5", "type": "C", "area": 351.12, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "507", "floor": "5", "type": "C", "area": 353.81, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "508", "floor": "5", "type": "C", "area": 352.84, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "509", "floor": "5", "type": "E (Flex)", "area": 504.83, "reg": 775000, "post": 850000, "pool": false },
-            { "u": "510", "floor": "5", "type": "D", "area": 326.58, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "511", "floor": "5", "type": "D", "area": 325.93, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "512", "floor": "5", "type": "E (Flex)", "area": 504.61, "reg": 775000, "post": 850000, "pool": false },
-            { "u": "513", "floor": "5", "type": "C", "area": 346.71, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "514", "floor": "5", "type": "C", "area": 340.79, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "515", "floor": "5", "type": "C", "area": 350.47, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "516", "floor": "5", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
-            { "u": "517", "floor": "5", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
-            { "u": "518", "floor": "5", "type": "C", "area": 354.99, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "519", "floor": "5", "type": "D", "area": 314.95, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "520", "floor": "5", "type": "D", "area": 319.9, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "521", "floor": "5", "type": "D", "area": 313.88, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "522", "floor": "5", "type": "D", "area": 318.83, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "523", "floor": "5", "type": "D", "area": 321.73, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "524", "floor": "5", "type": "D", "area": 326.68, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "525", "floor": "5", "type": "E (Flex)", "area": 536.15, "reg": 799000, "post": 890000, "pool": false },
-            // FLOOR 6
-            { "u": "601", "floor": "6", "type": "C", "area": 360.59, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "602", "floor": "6", "type": "C", "area": 363.07, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "603", "floor": "6", "type": "C", "area": 349.93, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "604", "floor": "6", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
-            { "u": "605", "floor": "6", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
-            { "u": "606", "floor": "6", "type": "C", "area": 351.12, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "607", "floor": "6", "type": "C", "area": 353.81, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "608", "floor": "6", "type": "C", "area": 352.84, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "609", "floor": "6", "type": "E (Flex)", "area": 504.83, "reg": 775000, "post": 850000, "pool": false },
-            { "u": "610", "floor": "6", "type": "D", "area": 326.58, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "611", "floor": "6", "type": "D", "area": 325.93, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "612", "floor": "6", "type": "E (Flex)", "area": 504.61, "reg": 775000, "post": 850000, "pool": false },
-            { "u": "613", "floor": "6", "type": "C", "area": 346.71, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "614", "floor": "6", "type": "C", "area": 340.79, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "615", "floor": "6", "type": "C", "area": 350.47, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "616", "floor": "6", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
-            { "u": "617", "floor": "6", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
-            { "u": "618", "floor": "6", "type": "C", "area": 354.99, "reg": 595000, "post": 649000, "pool": false },
-            { "u": "619", "floor": "6", "type": "D", "area": 314.95, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "620", "floor": "6", "type": "D", "area": 319.9, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "621", "floor": "6", "type": "D", "area": 313.88, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "622", "floor": "6", "type": "D", "area": 318.83, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "623", "floor": "6", "type": "D", "area": 321.73, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "624", "floor": "6", "type": "D", "area": 326.68, "reg": 560000, "post": 620000, "pool": false },
-            { "u": "625", "floor": "6", "type": "E (Flex)", "area": 536.15, "reg": 799000, "post": 890000, "pool": false }
-        ];
+    // ==========================================
+    // 1. MASTER INVENTORY DATABASE
+    // ==========================================
+    const INVENTORY = [
+        // FLOOR 1
+        { "u": "101", "floor": "1", "type": "C", "area": 360.59, "reg": 645000, "post": 715000, "pool": false },
+        { "u": "102", "floor": "1", "type": "C", "area": 363.07, "reg": 645000, "post": 715000, "pool": false },
+        { "u": "103", "floor": "1", "type": "C", "area": 350.04, "reg": 645000, "post": 715000, "pool": false },
+        { "u": "104", "floor": "1", "type": "A (Flex)", "area": 522.16, "reg": 899000, "post": 975000, "pool": true },
+        { "u": "105", "floor": "1", "type": "A (Flex)", "area": 861.54, "reg": 999000, "post": 1100000, "pool": true },
+        { "u": "106", "floor": "1", "type": "C", "area": 351.12, "reg": 645000, "post": 715000, "pool": false },
+        { "u": "107", "floor": "1", "type": "C", "area": 353.81, "reg": 645000, "post": 715000, "pool": false },
+        { "u": "108", "floor": "1", "type": "C", "area": 352.84, "reg": 645000, "post": 715000, "pool": false },
+        { "u": "109", "floor": "1", "type": "E (Flex)", "area": 504.72, "reg": 849000, "post": 935000, "pool": false },
+        { "u": "110", "floor": "1", "type": "D", "area": 326.68, "reg": 620000, "post": 690000, "pool": false },
+        { "u": "111", "floor": "1", "type": "D", "area": 325.72, "reg": 620000, "post": 690000, "pool": false },
+        { "u": "112", "floor": "1", "type": "E (Flex)", "area": 504.61, "reg": 849000, "post": 935000, "pool": false },
+        { "u": "113", "floor": "1", "type": "C", "area": 346.71, "reg": 645000, "post": 715000, "pool": false },
+        { "u": "114", "floor": "1", "type": "C", "area": 340.79, "reg": 645000, "post": 715000, "pool": false },
+        { "u": "115", "floor": "1", "type": "C", "area": 350.47, "reg": 645000, "post": 715000, "pool": false },
+        { "u": "116", "floor": "1", "type": "B (Flex)", "area": 385.78, "reg": 699000, "post": 775000, "pool": true },
+        { "u": "117", "floor": "1", "type": "C", "area": 354.99, "reg": 645000, "post": 715000, "pool": false },
+        { "u": "118", "floor": "1", "type": "D", "area": 315.06, "reg": 620000, "post": 690000, "pool": false },
+        { "u": "119", "floor": "1", "type": "D", "area": 319.9, "reg": 620000, "post": 690000, "pool": false },
+        { "u": "120", "floor": "1", "type": "D", "area": 313.88, "reg": 620000, "post": 690000, "pool": false },
+        { "u": "121", "floor": "1", "type": "D", "area": 318.83, "reg": 620000, "post": 690000, "pool": false },
+        { "u": "122", "floor": "1", "type": "D", "area": 321.73, "reg": 620000, "post": 690000, "pool": false },
+        { "u": "123", "floor": "1", "type": "D", "area": 326.68, "reg": 620000, "post": 690000, "pool": false },
+        { "u": "124", "floor": "1", "type": "E (Flex)", "area": 536.15, "reg": 875000, "post": 975000, "pool": false },
+        // FLOOR 2
+        { "u": "201", "floor": "2", "type": "C", "area": 360.59, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "202", "floor": "2", "type": "C", "area": 363.07, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "203", "floor": "2", "type": "C", "area": 349.93, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "204", "floor": "2", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
+        { "u": "205", "floor": "2", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
+        { "u": "206", "floor": "2", "type": "C", "area": 351.12, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "207", "floor": "2", "type": "C", "area": 353.81, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "208", "floor": "2", "type": "C", "area": 352.84, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "209", "floor": "2", "type": "E (Flex)", "area": 504.83, "reg": 775000, "post": 850000, "pool": false },
+        { "u": "210", "floor": "2", "type": "D", "area": 326.58, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "211", "floor": "2", "type": "D", "area": 325.93, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "212", "floor": "2", "type": "E (Flex)", "area": 504.61, "reg": 775000, "post": 850000, "pool": false },
+        { "u": "213", "floor": "2", "type": "C", "area": 346.71, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "214", "floor": "2", "type": "C", "area": 340.79, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "215", "floor": "2", "type": "C", "area": 350.47, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "216", "floor": "2", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
+        { "u": "217", "floor": "2", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
+        { "u": "218", "floor": "2", "type": "C", "area": 354.99, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "219", "floor": "2", "type": "D", "area": 314.95, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "220", "floor": "2", "type": "D", "area": 319.9, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "221", "floor": "2", "type": "D", "area": 313.88, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "222", "floor": "2", "type": "D", "area": 318.83, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "223", "floor": "2", "type": "D", "area": 321.73, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "224", "floor": "2", "type": "D", "area": 326.68, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "225", "floor": "2", "type": "E (Flex)", "area": 536.15, "reg": 799000, "post": 890000, "pool": false },
+        // FLOOR 3
+        { "u": "301", "floor": "3", "type": "C", "area": 360.59, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "302", "floor": "3", "type": "C", "area": 363.07, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "303", "floor": "3", "type": "C", "area": 349.93, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "304", "floor": "3", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
+        { "u": "305", "floor": "3", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
+        { "u": "306", "floor": "3", "type": "C", "area": 351.12, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "307", "floor": "3", "type": "C", "area": 353.81, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "308", "floor": "3", "type": "C", "area": 352.84, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "309", "floor": "3", "type": "E (Flex)", "area": 504.83, "reg": 775000, "post": 850000, "pool": false },
+        { "u": "310", "floor": "3", "type": "D", "area": 326.58, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "311", "floor": "3", "type": "D", "area": 325.93, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "312", "floor": "3", "type": "E (Flex)", "area": 504.61, "reg": 775000, "post": 850000, "pool": false },
+        { "u": "313", "floor": "3", "type": "C", "area": 346.71, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "314", "floor": "3", "type": "C", "area": 340.79, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "315", "floor": "3", "type": "C", "area": 350.47, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "316", "floor": "3", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
+        { "u": "317", "floor": "3", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
+        { "u": "318", "floor": "3", "type": "C", "area": 354.99, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "319", "floor": "3", "type": "D", "area": 314.95, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "320", "floor": "3", "type": "D", "area": 319.9, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "321", "floor": "3", "type": "D", "area": 313.88, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "322", "floor": "3", "type": "D", "area": 318.83, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "323", "floor": "3", "type": "D", "area": 321.73, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "324", "floor": "3", "type": "D", "area": 326.68, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "325", "floor": "3", "type": "E (Flex)", "area": 536.15, "reg": 799000, "post": 890000, "pool": false },
+        // FLOOR 4
+        { "u": "401", "floor": "4", "type": "C", "area": 360.59, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "402", "floor": "4", "type": "C", "area": 363.07, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "403", "floor": "4", "type": "C", "area": 349.93, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "404", "floor": "4", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
+        { "u": "405", "floor": "4", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
+        { "u": "406", "floor": "4", "type": "C", "area": 351.12, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "407", "floor": "4", "type": "C", "area": 353.81, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "408", "floor": "4", "type": "C", "area": 352.84, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "409", "floor": "4", "type": "E (Flex)", "area": 504.83, "reg": 775000, "post": 850000, "pool": false },
+        { "u": "410", "floor": "4", "type": "D", "area": 326.58, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "411", "floor": "4", "type": "D", "area": 325.93, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "412", "floor": "4", "type": "E (Flex)", "area": 504.61, "reg": 775000, "post": 850000, "pool": false },
+        { "u": "413", "floor": "4", "type": "C", "area": 346.71, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "414", "floor": "4", "type": "C", "area": 340.79, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "415", "floor": "4", "type": "C", "area": 350.47, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "416", "floor": "4", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
+        { "u": "417", "floor": "4", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
+        { "u": "418", "floor": "4", "type": "C", "area": 354.99, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "419", "floor": "4", "type": "D", "area": 314.95, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "420", "floor": "4", "type": "D", "area": 319.9, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "421", "floor": "4", "type": "D", "area": 313.88, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "422", "floor": "4", "type": "D", "area": 318.83, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "423", "floor": "4", "type": "D", "area": 321.73, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "424", "floor": "4", "type": "D", "area": 326.68, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "425", "floor": "4", "type": "E (Flex)", "area": 536.15, "reg": 799000, "post": 890000, "pool": false },
+        // FLOOR 5
+        { "u": "501", "floor": "5", "type": "C", "area": 360.59, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "502", "floor": "5", "type": "C", "area": 363.07, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "503", "floor": "5", "type": "C", "area": 349.93, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "504", "floor": "5", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
+        { "u": "505", "floor": "5", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
+        { "u": "506", "floor": "5", "type": "C", "area": 351.12, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "507", "floor": "5", "type": "C", "area": 353.81, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "508", "floor": "5", "type": "C", "area": 352.84, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "509", "floor": "5", "type": "E (Flex)", "area": 504.83, "reg": 775000, "post": 850000, "pool": false },
+        { "u": "510", "floor": "5", "type": "D", "area": 326.58, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "511", "floor": "5", "type": "D", "area": 325.93, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "512", "floor": "5", "type": "E (Flex)", "area": 504.61, "reg": 775000, "post": 850000, "pool": false },
+        { "u": "513", "floor": "5", "type": "C", "area": 346.71, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "514", "floor": "5", "type": "C", "area": 340.79, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "515", "floor": "5", "type": "C", "area": 350.47, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "516", "floor": "5", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
+        { "u": "517", "floor": "5", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
+        { "u": "518", "floor": "5", "type": "C", "area": 354.99, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "519", "floor": "5", "type": "D", "area": 314.95, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "520", "floor": "5", "type": "D", "area": 319.9, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "521", "floor": "5", "type": "D", "area": 313.88, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "522", "floor": "5", "type": "D", "area": 318.83, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "523", "floor": "5", "type": "D", "area": 321.73, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "524", "floor": "5", "type": "D", "area": 326.68, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "525", "floor": "5", "type": "E (Flex)", "area": 536.15, "reg": 799000, "post": 890000, "pool": false },
+        // FLOOR 6
+        { "u": "601", "floor": "6", "type": "C", "area": 360.59, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "602", "floor": "6", "type": "C", "area": 363.07, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "603", "floor": "6", "type": "C", "area": 349.93, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "604", "floor": "6", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
+        { "u": "605", "floor": "6", "type": "A (Flex)", "area": 583.51, "reg": 815000, "post": 899000, "pool": true },
+        { "u": "606", "floor": "6", "type": "C", "area": 351.12, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "607", "floor": "6", "type": "C", "area": 353.81, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "608", "floor": "6", "type": "C", "area": 352.84, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "609", "floor": "6", "type": "E (Flex)", "area": 504.83, "reg": 775000, "post": 850000, "pool": false },
+        { "u": "610", "floor": "6", "type": "D", "area": 326.58, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "611", "floor": "6", "type": "D", "area": 325.93, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "612", "floor": "6", "type": "E (Flex)", "area": 504.61, "reg": 775000, "post": 850000, "pool": false },
+        { "u": "613", "floor": "6", "type": "C", "area": 346.71, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "614", "floor": "6", "type": "C", "area": 340.79, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "615", "floor": "6", "type": "C", "area": 350.47, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "616", "floor": "6", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
+        { "u": "617", "floor": "6", "type": "B (Flex)", "area": 383.84, "reg": 635000, "post": 699000, "pool": true },
+        { "u": "618", "floor": "6", "type": "C", "area": 354.99, "reg": 595000, "post": 649000, "pool": false },
+        { "u": "619", "floor": "6", "type": "D", "area": 314.95, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "620", "floor": "6", "type": "D", "area": 319.9, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "621", "floor": "6", "type": "D", "area": 313.88, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "622", "floor": "6", "type": "D", "area": 318.83, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "623", "floor": "6", "type": "D", "area": 321.73, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "624", "floor": "6", "type": "D", "area": 326.68, "reg": 560000, "post": 620000, "pool": false },
+        { "u": "625", "floor": "6", "type": "E (Flex)", "area": 536.15, "reg": 799000, "post": 890000, "pool": false }
+    ];
 
-        // ==========================================
-        // 2. CALCULATION ENGINE (100% unchanged)
-        // ==========================================
-        const formatter = new Intl.NumberFormat('en-AE', { style: 'currency', currency: 'AED', maximumFractionDigits: 0 });
-        const balloonMonths = [4, 10, 16, 22, 28];
+    // ==========================================
+    // 2. CALCULATION ENGINE
+    // ==========================================
+    const formatter = new Intl.NumberFormat('en-AE', { style: 'currency', currency: 'AED', maximumFractionDigits: 0 });
+    const balloonMonths = [4, 10, 16, 22, 28];
 
-        function debounce(fn, delay) {
-            let timer;
-            return function (...args) {
-                clearTimeout(timer);
-                timer = setTimeout(() => fn.apply(this, args), delay);
-            };
-        }
+    // --- FIX: Debounce utility to prevent calculate() firing on every keystroke ---
+    function debounce(fn, delay) {
+        let timer;
+        return function(...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn.apply(this, args), delay);
+        };
+    }
 
-        $(document).ready(() => {
-            initFilters();
-            initCalculator();
-            $('#btn-pdf').on('click', generateProfessionalPDF);
+    $(document).ready(() => {
+        initFilters();
+        initCalculator();
+        $('#btn-pdf').on('click', generateProfessionalPDF);
+    });
+
+    function initFilters() {
+        const floors = [...new Set(INVENTORY.map(i => i.floor))].sort();
+        const types  = [...new Set(INVENTORY.map(i => i.type))].sort();
+
+        $('#filter-floor').append('<option value="all">ALL FLOORS</option>');
+        floors.forEach(f => $('#filter-floor').append(`<option value="${f}">FLOOR ${f}</option>`));
+
+        $('#filter-type').append('<option value="all">ALL TYPES</option>');
+        types.forEach(t => $('#filter-type').append(`<option value="${t}">${t}</option>`));
+
+        $('#unit-select').select2({ placeholder: "SEARCH UNIT ID...", minimumResultsForSearch: 1 });
+        updateUnitDropdown();
+        $('#filter-floor, #filter-type').on('change', updateUnitDropdown);
+    }
+
+    function updateUnitDropdown() {
+        const floor = $('#filter-floor').val();
+        const type  = $('#filter-type').val();
+        $('#unit-select').empty().append(new Option("", "", true, true));
+        INVENTORY.forEach(item => {
+            const floorMatch = floor === 'all' || item.floor === floor;
+            const typeMatch  = type  === 'all' || item.type  === type;
+            if (floorMatch && typeMatch) {
+                $('#unit-select').append(new Option(`UNIT ${item.u} • ${item.type} • ${item.area} sqft`, item.u));
+            }
         });
+        $('#unit-select').trigger('change');
+    }
 
-        function initFilters() {
-            const floors = [...new Set(INVENTORY.map(i => i.floor))].sort();
-            const types = [...new Set(INVENTORY.map(i => i.type))].sort();
-            $('#filter-floor').append('<option value="all">ALL FLOORS</option>');
-            floors.forEach(f => $('#filter-floor').append(`<option value="${f}">FLOOR ${f}</option>`));
-            $('#filter-type').append('<option value="all">ALL TYPES</option>');
-            types.forEach(t => $('#filter-type').append(`<option value="${t}">${t}</option>`));
-            $('#unit-select').select2({ placeholder: "SEARCH UNIT ID...", minimumResultsForSearch: 1 });
-            updateUnitDropdown();
-            $('#filter-floor, #filter-type').on('change', updateUnitDropdown);
+    function initCalculator() {
+        // Immediate recalc for dropdowns/checkboxes (fast, no text input)
+        $('#unit-select, #plan-mode, #toggle-furnish, #toggle-pool').on('change', calculate);
+
+        // --- FIX: Debounced recalc for number inputs (300ms wait after typing stops) ---
+        const debouncedCalc = debounce(calculate, 300);
+        $('#input-discount, #input-balloon').on('input', debouncedCalc);
+
+        calculate();
+    }
+
+    function calculate() {
+        const uId  = $('#unit-select').val();
+        const unit = INVENTORY.find(i => i.u === uId);
+
+        if (!unit) {
+            $('#unit-specs').css('opacity', '0.3');
+            return;
         }
 
-        function updateUnitDropdown() {
-            const floor = $('#filter-floor').val();
-            const type = $('#filter-type').val();
-            $('#unit-select').empty().append(new Option("", "", true, true));
-            INVENTORY.forEach(item => {
-                const floorMatch = floor === 'all' || item.floor === floor;
-                const typeMatch = type === 'all' || item.type === type;
-                if (floorMatch && typeMatch) {
-                    $('#unit-select').append(new Option(`UNIT ${item.u} • ${item.type} • ${item.area} sqft`, item.u));
-                }
-            });
-            $('#unit-select').trigger('change');
+        $('#unit-specs').css('opacity', '1');
+        $('#spec-area').text(unit.area.toFixed(0));
+        $('#spec-type').text(unit.type);
+
+        const plan = $('#plan-mode').val();
+        let netPrice = (plan === '7030') ? unit.reg : unit.post;
+
+        const isFurnished = $('#toggle-furnish').is(':checked');
+        if (!isFurnished) netPrice -= 25000;
+
+        const canHavePool = unit.pool;
+        if (canHavePool) $('#pool-container').removeClass('opacity-50 pointer-events-none');
+        else {
+            $('#pool-container').addClass('opacity-50 pointer-events-none');
+            $('#toggle-pool').prop('checked', false);
         }
 
-        function initCalculator() {
-            $('#unit-select, #plan-mode, #toggle-furnish, #toggle-pool').on('change', calculate);
-            const debouncedCalc = debounce(calculate, 300);
-            $('#input-discount, #input-balloon').on('input', debouncedCalc);
-            calculate();
+        if (canHavePool && $('#toggle-pool').is(':checked')) netPrice += 100000;
+
+        const discPercent = parseFloat($('#input-discount').val()) || 0;
+        netPrice = netPrice * (1 - (discPercent / 100));
+
+        const balloonAmt = parseFloat($('#input-balloon').val()) || 0;
+        let schedule = [];
+
+        const dpAmt      = netPrice * 0.10;
+        const secondInst = netPrice * 0.10;
+        schedule.push({ m: 'BOOKING', desc: 'DOWN PAYMENT (10%)',        amt: dpAmt,      type: 'milestone' });
+        schedule.push({ m: 'MONTH 2', desc: 'SECOND INSTALLMENT (10%)', amt: secondInst,  type: 'milestone' });
+
+        const bridgeTarget = (plan === '7030') ? 0.50 : 0.30;
+        const bridgeTotal  = netPrice * bridgeTarget;
+        const sumOfBalloons = balloonAmt * balloonMonths.length;
+        const monthlyInst  = (bridgeTotal - sumOfBalloons) / 28;
+
+        // --- FIX: Build HTML as an array and join once, then inject (single DOM write) ---
+        const rows = [];
+
+        for (let i = 1; i <= 30; i++) {
+            if (i === 2) continue;
+            let rowType = 'monthly';
+            let desc    = 'MONTHLY INSTALLMENT';
+            let amt     = monthlyInst;
+
+            if (balloonMonths.includes(i)) {
+                rowType = 'balloon';
+                desc    = 'MONTHLY + BALLOON PAYMENT';
+                amt     = monthlyInst + balloonAmt;
+            }
+            if (i === 30) {
+                rowType = 'milestone';
+                desc    = `HANDOVER & POSSESSION (${plan === '7030' ? '30%' : '10%'})`;
+                amt     = netPrice * (plan === '7030' ? 0.30 : 0.10);
+            }
+            schedule.push({ m: 'MONTH ' + i, desc, amt, type: rowType });
         }
 
-        function calculate() {
-            const uId = $('#unit-select').val();
-            const unit = INVENTORY.find(i => i.u === uId);
-            if (!unit) {
-                $('#unit-specs').css('opacity', '0.3');
-                return;
+        if (plan === '6040') {
+            const postTotal   = netPrice * 0.40;
+            const postMonthly = postTotal / 36;
+            for (let j = 31; j <= 66; j++) {
+                schedule.push({ m: 'MONTH ' + j, desc: 'POST-HANDOVER PAYMENT (40%)', amt: postMonthly, type: 'post' });
             }
-            $('#unit-specs').css('opacity', '1');
-            $('#spec-area').text(unit.area.toFixed(0));
-            $('#spec-type').text(unit.type);
-            const plan = $('#plan-mode').val();
-            let netPrice = (plan === '7030') ? unit.reg : unit.post;
-            const isFurnished = $('#toggle-furnish').is(':checked');
-            if (!isFurnished) netPrice -= 25000;
-            const canHavePool = unit.pool;
-            if (canHavePool) $('#pool-container').removeClass('opacity-50 pointer-events-none');
-            else {
-                $('#pool-container').addClass('opacity-50 pointer-events-none');
-                $('#toggle-pool').prop('checked', false);
-            }
-            if (canHavePool && $('#toggle-pool').is(':checked')) netPrice += 100000;
-            const discPercent = parseFloat($('#input-discount').val()) || 0;
-            netPrice = netPrice * (1 - (discPercent / 100));
-            const balloonAmt = parseFloat($('#input-balloon').val()) || 0;
-            let schedule = [];
-            const dpAmt = netPrice * 0.10;
-            const secondInst = netPrice * 0.10;
-            schedule.push({ m: 'BOOKING', desc: 'DOWN PAYMENT (10%)', amt: dpAmt, type: 'milestone' });
-            schedule.push({ m: 'MONTH 2', desc: 'SECOND INSTALLMENT (10%)', amt: secondInst, type: 'milestone' });
-            const bridgeTarget = (plan === '7030') ? 0.50 : 0.30;
-            const bridgeTotal = netPrice * bridgeTarget;
-            const sumOfBalloons = balloonAmt * balloonMonths.length;
-            const monthlyInst = (bridgeTotal - sumOfBalloons) / 28;
-            const rows = [];
-            for (let i = 1; i <= 30; i++) {
-                if (i === 2) continue;
-                let rowType = 'monthly';
-                let desc = 'MONTHLY INSTALLMENT';
-                let amt = monthlyInst;
-                if (balloonMonths.includes(i)) {
-                    rowType = 'balloon';
-                    desc = 'MONTHLY + BALLOON PAYMENT';
-                    amt = monthlyInst + balloonAmt;
-                }
-                if (i === 30) {
-                    rowType = 'milestone';
-                    desc = `HANDOVER & POSSESSION (${plan === '7030' ? '30%' : '10%'})`;
-                    amt = netPrice * (plan === '7030' ? 0.30 : 0.10);
-                }
-                schedule.push({ m: 'MONTH ' + i, desc, amt, type: rowType });
-            }
-            if (plan === '6040') {
-                const postTotal = netPrice * 0.40;
-                const postMonthly = postTotal / 36;
-                for (let j = 31; j <= 66; j++) {
-                    schedule.push({ m: 'MONTH ' + j, desc: 'POST-HANDOVER PAYMENT (40%)', amt: postMonthly, type: 'post' });
-                }
-            }
-            schedule.forEach(row => {
-                let rowClass = '';
-                if (row.type === 'milestone') rowClass = 'row-milestone';
-                else if (row.type === 'balloon') rowClass = 'row-balloon';
-                const amtColor = row.type === 'milestone' ? 'var(--color-egyptian-earth)' : 'var(--color-emerald-green)';
-                const descColor = row.type === 'milestone' ? 'var(--color-egyptian-earth)' : '#64748B';
-                rows.push(`
+        }
+
+        // Single DOM write for the entire table body
+        schedule.forEach(row => {
+            let rowClass = '';
+            if (row.type === 'milestone') rowClass = 'row-milestone';
+            else if (row.type === 'balloon') rowClass = 'row-balloon';
+            const amtColor = row.type === 'milestone' ? 'var(--color-egyptian-earth)' : 'var(--color-emerald-green)';
+            const descColor = row.type === 'milestone' ? 'var(--color-egyptian-earth)' : '#64748B';
+            rows.push(`
                 <tr class="${rowClass}" style="color: var(--color-nor-de-vigne);">
                     <td class="p-4 uppercase text-[10px] font-black">${row.m}</td>
                     <td class="p-4 text-[10px] uppercase tracking-wide" style="color:${descColor}">${row.desc}</td>
                     <td class="p-4 text-right text-[11px] font-bold" style="color:${amtColor}">${formatter.format(row.amt)}</td>
                 </tr>`);
+        });
+
+        $('#schedule-body').html(rows.join(''));
+
+        // Update summary cards
+        $('#dash-net').text(formatter.format(netPrice));
+        $('#dash-dp').text(formatter.format(dpAmt));
+        $('#dash-monthly').text(formatter.format(monthlyInst));
+        $('#badge-plan').text(plan === '7030' ? '70/30 PLAN' : '60/40 POST-HANDOVER');
+
+        window.currentExportData = {
+            netPrice, unit, plan, schedule,
+            furnished: isFurnished,
+            pool: $('#toggle-pool').is(':checked')
+        };
+    }
+
+    // ==========================================
+    // 3. PDF ENGINE
+    // ==========================================
+
+    function loadImage(url) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload  = () => resolve(img);
+            img.onerror = () => { console.warn(`Failed to load: ${url}`); resolve(null); };
+            img.src = url;
+        });
+    }
+
+    async function generateProfessionalPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc   = new jsPDF('l', 'mm', 'a4');
+        const pageW = 297;
+        const pageH = 210;
+
+        const data = window.currentExportData;
+        if (!data) return alert("Please select a unit first.");
+
+        const $btn = $('#btn-pdf');
+        $btn.text('GENERATING PDF...').prop('disabled', true);
+
+        const basePath = 'assets/';
+
+        // Load all images in parallel
+        const [imgTitle, imgMap, imgRender, imgSubtitle, imgThankYou] = await Promise.all([
+            loadImage(basePath + 'Title.jpg'),
+            loadImage(basePath + 'Map.jpg'),
+            loadImage(basePath + 'Render.jpg'),
+            loadImage(basePath + 'Subtitle.jpg'),
+            loadImage(basePath + '9.jpg')
+        ]);
+
+        // ── PAGE 1: TITLE (use jsPDF's default first page — no addPage) ──
+        if (imgTitle) {
+            doc.addImage(imgTitle, 'JPEG', 0, 0, pageW, pageH);
+        } else {
+            doc.setFillColor(13, 54, 45);
+            doc.rect(0, 0, pageW, pageH, 'F');
+        }
+        // Unit number — clean elegant text in the right-center area, matching brand screenshot
+        // Positioned right of centre, vertically centred ~55% down (below where the logo sits)
+        const unitTextX = pageW * 0.62;  // right-of-centre
+        const unitTextY = pageH * 0.60;  // just below vertical mid
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'normal');
+        doc.setCharSpace(4);   // wide letter-spacing like the screenshot
+        doc.text(`UNIT ${data.unit.u}`, unitTextX, unitTextY);
+        doc.setCharSpace(0);   // reset
+
+        // ── PAGE 2: MAP ───────────────────────────────────────────────────
+        doc.addPage();
+        if (imgMap) {
+            doc.addImage(imgMap, 'JPEG', 0, 0, pageW, pageH);
+        } else {
+            doc.setFillColor(220,220,220); doc.rect(0,0,pageW,pageH,'F');
+            doc.setTextColor(100,100,100); doc.setFontSize(18);
+            doc.text('Map.jpg missing — place in assets/', pageW/2, pageH/2, {align:'center'});
+        }
+
+        // ── PAGE 3: RENDER ────────────────────────────────────────────────
+        doc.addPage();
+        if (imgRender) {
+            doc.addImage(imgRender, 'JPEG', 0, 0, pageW, pageH);
+        } else {
+            doc.setFillColor(220,220,220); doc.rect(0,0,pageW,pageH,'F');
+            doc.setTextColor(100,100,100); doc.setFontSize(18);
+            doc.text('Render.jpg missing — place in assets/', pageW/2, pageH/2, {align:'center'});
+        }
+
+        // ── PAGE 4: UNIT SPECIFICATIONS ──────────────────────────────────
+        doc.addPage();
+        const _dkGreen   = [13,  54,  45];
+        const _ltGreen   = [143, 182, 126];
+        const _offWhite  = [238, 232, 213];
+        const _dimWhite  = [160, 165, 155];
+
+        doc.setFillColor(..._dkGreen);
+        doc.rect(0, 0, pageW, pageH, 'F');
+
+        // Brand header — top-left
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.setCharSpace(0);
+        doc.setTextColor(..._offWhite);
+        doc.text('Southloft', 18, 22);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setCharSpace(2);
+        doc.setTextColor(..._ltGreen);
+        doc.text('ELEVATED CO-LIVING', 18, 30);
+        doc.setCharSpace(0);
+
+        // Separator line
+        doc.setDrawColor(..._ltGreen);
+        doc.setLineWidth(0.25);
+        doc.line(18, 35, pageW - 18, 35);
+
+        // Large unit number
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(36);
+        doc.setCharSpace(1);
+        doc.setTextColor(..._offWhite);
+        doc.text(`UNIT ${data.unit.u}`, 18, 62);
+        doc.setCharSpace(0);
+
+        // Spec rows — label column at 18, value column at 100
+        const specRows = [
+            ['FLOOR NO.',    `${data.unit.floor}`],
+            ['UNIT TYPE',    data.unit.type],
+            ['TOTAL AREA',   `${data.unit.area.toFixed(2)} SQFT`],
+            ['PURCHASE PRICE', formatter.format(data.netPrice)],
+            ['FURNISHING',   data.furnished ? 'FULLY FURNISHED' : 'UNFURNISHED'],
+            ['PRIVATE POOL', data.pool      ? 'INCLUDED'        : 'NOT INCLUDED'],
+        ];
+
+        let specY  = 78;
+        const rowGap  = 15;
+        const labelX  = 18;
+        const valueX  = 110;
+
+        specRows.forEach(([label, val]) => {
+            // Row separator — subtle
+            doc.setDrawColor(255, 255, 255);
+            doc.setGState(new doc.GState({ opacity: 0.08 }));
+            doc.line(labelX, specY - 4, pageW - 18, specY - 4);
+            doc.setGState(new doc.GState({ opacity: 1 }));
+
+            // Label
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setCharSpace(1);
+            doc.setTextColor(..._dimWhite);
+            doc.text(label, labelX, specY);
+            doc.setCharSpace(0);
+
+            // Value
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.setTextColor(..._offWhite);
+            doc.text(val, valueX, specY);
+
+            specY += rowGap;
+        });
+
+        // ── PAGE 5: PREMIUM PAYMENT PLAN ──────────────────────────────────
+        doc.addPage();
+        const darkGreen  = [13,  54,  45];
+        const lightGreen = [143, 182, 126];
+        const offWhite   = [238, 232, 213];
+        const dimWhite   = [155, 160, 152];
+
+        // ── Full-page dark background ──
+        doc.setFillColor(...darkGreen);
+        doc.rect(0, 0, pageW, pageH, 'F');
+
+        const ML = 16;   // left margin
+        const MR = 16;   // right margin
+        const CW = pageW - ML - MR;  // 265mm usable width
+
+        // ── Header row ──
+        const planLabel = data.plan === '7030' ? '70 | 30 PAYMENT PLAN' : '60 | 40 PAYMENT PLAN';
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(22);
+        doc.setCharSpace(0);
+        doc.setTextColor(...offWhite);
+        doc.text(planLabel, ML, 18);
+
+        // Purchase price — right-aligned on same line
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(...lightGreen);
+        doc.text('PURCHASE PRICE:', pageW - MR - 65, 18);
+        doc.setTextColor(...offWhite);
+        doc.text(formatter.format(data.netPrice), pageW - MR - 65 + 42, 18);
+
+        // Separator
+        doc.setDrawColor(...lightGreen);
+        doc.setLineWidth(0.3);
+        doc.line(ML, 22, pageW - MR, 22);
+
+        // ── Column definitions (5 columns balanced across 265mm) ──
+        // Col widths: 60 | 32 | 55 | 55 | 63 = 265mm
+        const C = [
+            { label: 'INSTALLMENT',          x: ML,               w: 60 },
+            { label: '% OF PURCHASE',        x: ML + 62,          w: 32 },
+            { label: 'AMOUNT (AED)',          x: ML + 62 + 34,     w: 55 },
+            { label: 'PAYMENT DATE',         x: ML + 62 + 34 + 57, w: 55 },
+            { label: 'MILESTONE',            x: ML + 62 + 34 + 57 + 57, w: 63 },
+        ];
+
+        const colHeaderY = 30;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        doc.setTextColor(...lightGreen);
+        doc.setCharSpace(0);
+        C.forEach(c => doc.text(c.label, c.x, colHeaderY));
+
+        doc.setDrawColor(255, 255, 255);
+        doc.setGState(new doc.GState({ opacity: 0.15 }));
+        doc.line(ML, colHeaderY + 3, pageW - MR, colHeaderY + 3);
+        doc.setGState(new doc.GState({ opacity: 1 }));
+
+        // ── Data calculation ──
+        const np           = data.netPrice;
+        const plan         = data.plan;
+        const dpAmt        = np * 0.10;
+        const secondInst   = np * 0.10;
+        const balloonAmt   = parseFloat($('#input-balloon').val()) || 0;
+        const bridgeTarget = plan === '7030' ? 0.50 : 0.30;
+        const bridgeTotal  = np * bridgeTarget;
+        const sumBalloons  = balloonAmt * balloonMonths.length;
+        const monthlyInst  = (bridgeTotal - sumBalloons) / 28;
+        const handoverPct  = plan === '7030' ? 30 : 10;
+        const handoverAmt  = np * (handoverPct / 100);
+        const midPct       = ((bridgeTarget - 0.20) * 100).toFixed(0);
+        const dldFee       = (np * 0.04).toLocaleString('en-AE', {maximumFractionDigits:0});
+        const fmt          = v => v.toLocaleString('en-AE', {maximumFractionDigits:0});
+
+        // Each row: label lines[], pct, amtLines[], dateLines[], ms
+        const tableRows = [
+            {
+                labelLines: ['BOOKING AMOUNT', '+ FEES'],
+                pct: '10%',
+                amtLines:  [fmt(dpAmt), dldFee + ' — DLD FEE', '5,000 — OQOOD FEE'],
+                dateLines: ['ON BOOKING'],
+                ms:        'ON BOOKING'
+            },
+            {
+                labelLines: ['FIRST INSTALLMENT'],
+                pct: '10%',
+                amtLines:  [fmt(secondInst)],
+                dateLines: ['1 MONTH FROM', 'BOOKING DATE'],
+                ms:        '—'
+            },
+            {
+                labelLines: ['MONTHLY INSTALLMENTS', '(MONTHS 3–30)'],
+                pct: midPct + '%',
+                amtLines:  [fmt(monthlyInst) + ' / MONTH'],
+                dateLines: ['MONTHS 3 – 30'],
+                ms:        '—'
+            },
+            {
+                labelLines: ['BALLOON PAYMENTS', `(MONTHS 4, 10, 16, 22, 28)`],
+                pct:        '—',
+                amtLines:   [
+                    fmt(balloonAmt) + ' EACH',
+                    fmt(monthlyInst + balloonAmt) + ' TOTAL / BALLOON MONTH'
+                ],
+                dateLines:  ['5 OCCURRENCES'],
+                ms:         '—'
+            },
+            {
+                labelLines: ['HANDOVER'],
+                pct: handoverPct + '%',
+                amtLines:  [fmt(handoverAmt)],
+                dateLines: ['ON HANDOVER'],
+                ms:        'COMPLETION'
+            },
+        ];
+        if (plan === '6040') {
+            const postMonthly = (np * 0.40) / 36;
+            tableRows.push({
+                labelLines: ['POST-HANDOVER', '(36 MONTHS)'],
+                pct: '40%',
+                amtLines:  [fmt(postMonthly) + ' / MONTH'],
+                dateLines: ['MONTHS 31 – 66'],
+                ms: '—'
             });
-            $('#schedule-body').html(rows.join(''));
-            $('#dash-net').text(formatter.format(netPrice));
-            $('#dash-dp').text(formatter.format(dpAmt));
-            $('#dash-monthly').text(formatter.format(monthlyInst));
-            $('#badge-plan').text(plan === '7030' ? '70/30 PLAN' : '60/40 POST-HANDOVER');
-            window.currentExportData = {
-                netPrice, unit, plan, schedule,
-                furnished: isFurnished,
-                pool: $('#toggle-pool').is(':checked')
-            };
+        }
+        // Hide balloon row if balloon amount is 0
+        const filteredRows = tableRows.filter((r, i) => {
+            if (r.labelLines[0] === 'BALLOON PAYMENTS' && balloonAmt === 0) return false;
+            return true;
+        });
+
+        // ── Draw table rows ──
+        const lineH    = 4.8;   // line height within a multi-line cell
+        const rowPad   = 6;     // base top-padding per row
+        const rowSep   = 14;    // fixed row height (gap between row baselines for single-line rows)
+        let rowY       = colHeaderY + 10;
+
+        filteredRows.forEach((row) => {
+            const maxLines = Math.max(row.labelLines.length, row.amtLines.length, row.dateLines.length);
+            const rowHeight = rowPad + maxLines * lineH + 4;
+
+            // Subtle row separator at bottom
+            doc.setDrawColor(255, 255, 255);
+            doc.setGState(new doc.GState({ opacity: 0.10 }));
+            doc.line(ML, rowY + rowHeight, pageW - MR, rowY + rowHeight);
+            doc.setGState(new doc.GState({ opacity: 1 }));
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.5);
+
+            // Col 0: label
+            doc.setTextColor(...offWhite);
+            row.labelLines.forEach((l, i) => doc.text(l, C[0].x, rowY + rowPad + i * lineH));
+
+            // Col 1: %
+            doc.text(row.pct, C[1].x, rowY + rowPad);
+
+            // Col 2: amount (first line bright, secondary lines dimmer)
+            row.amtLines.forEach((a, i) => {
+                doc.setTextColor(...(i === 0 ? offWhite : dimWhite));
+                doc.setFontSize(i === 0 ? 8.5 : 7.5);
+                doc.text(a, C[2].x, rowY + rowPad + i * lineH);
+            });
+
+            // Col 3: date
+            doc.setTextColor(...offWhite);
+            doc.setFontSize(8.5);
+            row.dateLines.forEach((d, i) => doc.text(d, C[3].x, rowY + rowPad + i * lineH));
+
+            // Col 4: milestone
+            doc.text(row.ms, C[4].x, rowY + rowPad);
+
+            rowY += rowHeight;
+        });
+
+        // ── Bank Details Section ─────────────────────────────────────────
+        // Position bank section in lower quarter of the page, well-spaced
+        const bankSectionTop = pageH - 62;
+        doc.setDrawColor(...lightGreen);
+        doc.setLineWidth(0.3);
+        doc.line(ML, bankSectionTop, pageW - MR, bankSectionTop);
+
+        // Two-column labels
+        const colB1 = ML;
+        const colB2 = ML + CW / 2 + 4;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(...offWhite);
+        doc.text('BOOKING AND INSTALLMENT PAYMENTS', colB1, bankSectionTop + 6);
+        doc.text('FOR 4% DLD AND ADMIN FEE', colB2, bankSectionTop + 6);
+
+        const bankLeft = [
+            ['Bank',           'United Bank Limited (UBL)'],
+            ['Account Title',  'ESCROW ACCOUNT GATEWAY BY PREMIERCHOICE'],
+            ['Account Number', '200770307'],
+            ['IBAN',           'AE090470000000200770307'],
+            ['Swift Code',     'UNILAEAD'],
+            ['Branch',         'Deira, Dubai'],
+        ];
+        const bankRight = [
+            ['Bank',           'Abu Dhabi Commercial Bank'],
+            ['Account Title',  'PCI REAL ESTATE DEVELOPERS LLC'],
+            ['IBAN',           'AE770030010031001994462'],
+            ['Swift Code',     'ADCBAEAA'],
+        ];
+
+        const drawBank = (entries, startX, startY) => {
+            let y = startY;
+            entries.forEach(([k, v]) => {
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(6.5);
+                doc.setTextColor(...lightGreen);
+                doc.text(k, startX, y);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7);
+                doc.setTextColor(...offWhite);
+                doc.text(v, startX, y + 3.8);
+                y += 9;
+            });
+        };
+
+        drawBank(bankLeft,  colB1, bankSectionTop + 12);
+        drawBank(bankRight, colB2, bankSectionTop + 12);
+
+        // ── PAGE 5: SUBTITLE ─────────────────────────────────────────────
+        doc.addPage();
+        if (imgSubtitle) {
+            doc.addImage(imgSubtitle, 'JPEG', 0, 0, pageW, pageH);
+        } else {
+            doc.setFillColor(61,57,53); doc.rect(0,0,pageW,pageH,'F');
+            doc.setTextColor(255,255,255); doc.setFontSize(18);
+            doc.text('Subtitle.jpg missing — place in assets/', pageW/2, pageH/2, {align:'center'});
         }
 
-        // ==========================================
-        // 3. NEW PDF ENGINE - EXACT APPROVED TEMPLATE
-        // ==========================================
-        async function generateProfessionalPDF() {
-            const data = window.currentExportData;
-            if (!data) return alert("Please select a unit first.");
-
-            const $btn = $('#btn-pdf');
-            $btn.text('GENERATING PDF...').prop('disabled', true);
-
-            const templateContainer = document.getElementById('pdf-template');
-            
-            // --- FIX APPLIED HERE ---
-            // Briefly display the hidden template off-screen so html2canvas can read its dimensions properly
-            templateContainer.style.display = 'block';
-            templateContainer.style.position = 'absolute';
-            templateContainer.style.left = '-9999px';
-            templateContainer.style.top = '-9999px';
-            templateContainer.style.visibility = 'visible';
-
-            try {
-                const netPrice = data.netPrice;
-                const unit = data.unit;
-                const plan = data.plan;
-                const isFurnished = data.furnished;
-                const hasPool = data.pool;
-                const balloonAmt = parseFloat($('#input-balloon').val()) || 0;
-
-                // Calculations (exact same as calculator)
-                const dpAmt = netPrice * 0.10;
-                const secondInst = netPrice * 0.10;
-                const bridgeTarget = plan === '7030' ? 0.50 : 0.30;
-                const bridgeTotal = netPrice * bridgeTarget;
-                const sumBalloons = balloonAmt * 5;
-                const monthlyInst = (bridgeTotal - sumBalloons) / 28;
-                const handoverPct = plan === '7030' ? 30 : 10;
-                const handoverAmt = netPrice * (handoverPct / 100);
-
-                // Populate Page 1
-                const today = new Date();
-                const dateStr = today.toLocaleDateString('en-GB'); // DD/MM/YYYY
-                document.getElementById('pdf-page1-date').textContent = dateStr;
-                document.getElementById('pdf-page1-plan').textContent = plan === '7030' ? '70/30 PLAN' : '60/40 POST-HANDOVER PLAN';
-
-                // Populate Page 2 (table values)
-                const tableValues = templateContainer.querySelectorAll('.page-2 .table-value');
-                tableValues[0].textContent = ''; // Prepared For (blank as in approved template)
-                tableValues[1].textContent = dateStr;
-                tableValues[2].textContent = formatter.format(netPrice).replace('AED', '').trim();
-                tableValues[3].textContent = plan === '7030' ? '70/30' : '60/40';
-                tableValues[4].textContent = unit.u;
-                tableValues[5].textContent = unit.type;
-                tableValues[6].textContent = formatter.format(netPrice).replace('AED', '').trim();
-                tableValues[7].textContent = isFurnished ? 'Fully Furnished' : 'Unfurnished';
-                tableValues[8].textContent = `${unit.floor}th Floor`;
-                tableValues[9].textContent = `${unit.area.toFixed(2)} SQFT`;
-                tableValues[10].textContent = hasPool ? 'Included' : 'Not Included';
-
-                // Offer Validity = 2 weeks from today
-                const validityDate = new Date(today);
-                validityDate.setDate(validityDate.getDate() + 14);
-                tableValues[11].textContent = `2 Weeks (${validityDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})`;
-
-                // Rebuild Page 3 - Summary Table (dynamic, matches approved layout)
-                const pg3Table = document.getElementById('pdf-page3-table');
-                const planLabel = plan === '7030' ? '70 | 30 PAYMENT PLAN' : '60 | 40 PAYMENT PLAN';
-                document.getElementById('pdf-page3-plan-title').textContent = planLabel;
-
-                let pg3HTML = `
-                    <div class="pg3-tr header">
-                        <div class="pg3-col-1">Installment</div>
-                        <div class="pg3-col-2">% of Purchase</div>
-                        <div class="pg3-col-3">Amount (AED)</div>
-                        <div class="pg3-col-4">Payment Date</div>
-                        <div class="pg3-col-5">Milestone</div>
-                    </div>
-                `;
-
-                // Booking + Fees
-                pg3HTML += `
-                    <div class="pg3-tr">
-                        <div class="pg3-col-1">Booking Amount + Fees</div>
-                        <div class="pg3-col-2">10%</div>
-                        <div class="pg3-col-3">
-                            ${Math.round(dpAmt).toLocaleString('en-AE')}
-                            <span class="sub-text">(+ ${(netPrice * 0.04).toLocaleString('en-AE')} DLD Fee)</span>
-                            <span class="sub-text">(+ 5,000 OQOOD Fee)</span>
-                        </div>
-                        <div class="pg3-col-4">On Booking</div>
-                        <div class="pg3-col-5">On Booking</div>
-                    </div>
-                `;
-
-                // First Installment
-                pg3HTML += `
-                    <div class="pg3-tr">
-                        <div class="pg3-col-1">First Installment</div>
-                        <div class="pg3-col-2">10%</div>
-                        <div class="pg3-col-3">${Math.round(secondInst).toLocaleString('en-AE')}</div>
-                        <div class="pg3-col-4">1 Month from Booking Date</div>
-                        <div class="pg3-col-5">—</div>
-                    </div>
-                `;
-
-                // Monthly Installments
-                const midPct = ((bridgeTarget - 0.20) * 100).toFixed(0);
-                pg3HTML += `
-                    <div class="pg3-tr">
-                        <div class="pg3-col-1">Monthly Installments<br><span class="sub-text">(MONTHS 3–30)</span></div>
-                        <div class="pg3-col-2">${midPct}%</div>
-                        <div class="pg3-col-3">${Math.round(monthlyInst).toLocaleString('en-AE')} / Month</div>
-                        <div class="pg3-col-4">Months 3 – 30</div>
-                        <div class="pg3-col-5">—</div>
-                    </div>
-                `;
-
-                // Balloon (hide if 0)
-                if (balloonAmt > 0) {
-                    pg3HTML += `
-                        <div class="pg3-tr">
-                            <div class="pg3-col-1">Balloon Payments<br><span class="sub-text">(MONTHS 4, 10, 16, 22, 28)</span></div>
-                            <div class="pg3-col-2">—</div>
-                            <div class="pg3-col-3">
-                                ${balloonAmt.toLocaleString('en-AE')} Each
-                                <span class="sub-text">(${Math.round(monthlyInst + balloonAmt).toLocaleString('en-AE')} Total / Balloon Month)</span>
-                            </div>
-                            <div class="pg3-col-4">
-                                5 Occurrences
-                                <span class="sub-text">(Months 4, 10, 16, 22, 28)</span>
-                            </div>
-                            <div class="pg3-col-5">—</div>
-                        </div>
-                    `;
-                }
-
-                // Handover
-                pg3HTML += `
-                    <div class="pg3-tr">
-                        <div class="pg3-col-1">Handover</div>
-                        <div class="pg3-col-2">${handoverPct}%</div>
-                        <div class="pg3-col-3">${Math.round(handoverAmt).toLocaleString('en-AE')}</div>
-                        <div class="pg3-col-4">On Handover</div>
-                        <div class="pg3-col-5">Completion</div>
-                    </div>
-                `;
-
-                // Post-handover only for 60/40
-                if (plan === '6040') {
-                    const postMonthly = (netPrice * 0.40) / 36;
-                    pg3HTML += `
-                        <div class="pg3-tr">
-                            <div class="pg3-col-1">Post-Handover<br><span class="sub-text">(36 Months)</span></div>
-                            <div class="pg3-col-2">40%</div>
-                            <div class="pg3-col-3">${Math.round(postMonthly).toLocaleString('en-AE')} / Month</div>
-                            <div class="pg3-col-4">Months 31 – 66</div>
-                            <div class="pg3-col-5">—</div>
-                        </div>
-                    `;
-                }
-
-                pg3Table.innerHTML = pg3HTML;
-
-                // Rebuild Page 4 - Detailed Timeline (exact approved structure)
-                const bookingDate = new Date();
-                const formatDate = (d) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-
-                const timelineRows = [];
-                // Booking
-                timelineRows.push({
-                    timeline: 'BOOKING',
-                    desc: 'Down Payment (10%)',
-                    dateStr: formatDate(bookingDate),
-                    amt: Math.round(dpAmt)
-                });
-
-                let tempDate = new Date(bookingDate);
-                for (let i = 1; i <= 30; i++) {
-                    tempDate.setMonth(tempDate.getMonth() + 1);
-                    let desc = 'Monthly Installment';
-                    let amt = monthlyInst;
-                    if (i === 2) {
-                        desc = 'Second Installment (10%)';
-                        amt = secondInst;
-                    } else if (balloonMonths.includes(i)) {
-                        desc = 'Monthly + Balloon Payment';
-                        amt = monthlyInst + balloonAmt;
-                    }
-                    if (i === 30) {
-                        desc = `Handover & Possession (${handoverPct}%)`;
-                        amt = handoverAmt;
-                    }
-                    timelineRows.push({
-                        timeline: `MONTH ${i}`,
-                        desc: desc,
-                        dateStr: formatDate(tempDate),
-                        amt: Math.round(amt)
-                    });
-                }
-
-                // Left table: Booking + Months 1-15
-                const leftTable = document.getElementById('pdf-page4-left');
-                let leftHTML = `
-                    <div class="pg4-tr header">
-                        <div class="pg4-c1">Timeline</div>
-                        <div class="pg4-c2">Description</div>
-                        <div class="pg4-c3">Date</div>
-                        <div class="pg4-c4">Amount (AED)</div>
-                    </div>
-                `;
-                const leftData = timelineRows.slice(0, 16);
-                leftData.forEach(r => {
-                    leftHTML += `
-                    <div class="pg4-tr">
-                        <div class="pg4-c1">${r.timeline}</div>
-                        <div class="pg4-c2">${r.desc}</div>
-                        <div class="pg4-c3">${r.dateStr}</div>
-                        <div class="pg4-c4">${r.amt.toLocaleString('en-AE')}</div>
-                    </div>`;
-                });
-                leftTable.innerHTML = leftHTML;
-
-                // Right table: Months 16-30 + empty row
-                const rightTable = document.getElementById('pdf-page4-right');
-                let rightHTML = `
-                    <div class="pg4-tr header">
-                        <div class="pg4-c1">Timeline</div>
-                        <div class="pg4-c2">Description</div>
-                        <div class="pg4-c3">Date</div>
-                        <div class="pg4-c4">Amount (AED)</div>
-                    </div>
-                `;
-                const rightData = timelineRows.slice(16);
-                rightData.forEach(r => {
-                    rightHTML += `
-                    <div class="pg4-tr">
-                        <div class="pg4-c1">${r.timeline}</div>
-                        <div class="pg4-c2">${r.desc}</div>
-                        <div class="pg4-c3">${r.dateStr}</div>
-                        <div class="pg4-c4">${r.amt.toLocaleString('en-AE')}</div>
-                    </div>`;
-                });
-                // Empty final row (exact match to template)
-                rightHTML += `
-                    <div class="pg4-tr" style="border-bottom: none;">
-                        <div class="pg4-c1">&nbsp;</div>
-                        <div class="pg4-c2">&nbsp;</div>
-                        <div class="pg4-c3">&nbsp;</div>
-                        <div class="pg4-c4">&nbsp;</div>
-                    </div>`;
-                rightTable.innerHTML = rightHTML;
-
-                // === Generate PDF using html2canvas (exact visual match) ===
-                const { jsPDF } = window.jspdf; // <---- FIXED HERE
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const pages = templateContainer.querySelectorAll('.page');
-
-                for (let i = 0; i < pages.length; i++) {
-                    const canvas = await html2canvas(pages[i], {
-                        scale: 2,
-                        useCORS: true,
-                        allowTaint: true,
-                        backgroundColor: null
-                    });
-                    const imgData = canvas.toDataURL('image/png');
-                    pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
-
-                    if (i < pages.length - 1) pdf.addPage();
-                }
-
-                pdf.save(`SouthLofts_Unit_${unit.u}_Proposal.pdf`);
-                
-            } finally {
-                // --- FIX END: Always restore display back to normal regardless of errors ---
-                templateContainer.style.display = 'none';
-                templateContainer.style.position = '';
-                templateContainer.style.left = '';
-                templateContainer.style.top = '';
-                templateContainer.style.visibility = '';
-                $btn.text('Generate Executive PDF').prop('disabled', false);
-            }
+        // ── PAGE 6: PLAIN TITLE PAGE (no unit number — closing image) ────────
+        doc.addPage();
+        if (imgTitle) {
+            doc.addImage(imgTitle, 'JPEG', 0, 0, pageW, pageH);
+        } else {
+            doc.setFillColor(13,54,45); doc.rect(0,0,pageW,pageH,'F');
         }
+
+        doc.save(`SouthLofts_Unit_${data.unit.u}_Proposal.pdf`);
+        $btn.text('Generate Executive PDF').prop('disabled', false);
+    }
     </script>
 </body>
 </html>
