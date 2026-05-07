@@ -177,10 +177,11 @@ let balloonCount = 0;
 $(document).ready(() => {
     initFilters();
     // Instant calculations bound directly to input/change without debounce
+    // Added new listener hooks for the newly introduced custom fee inputs
     $('#unit-select, #plan-mode, #toggle-furnish, #toggle-pool').on('change', calculate);
-    $('#input-discount').on('input change', calculate);
+    $('#input-discount, #input-dld-fee, #input-admin-fee').on('input change', calculate);
     
-    // Setup Custom Balloon Payments Logic (Updated to target Installment Numbers)
+    // Setup Custom Balloon Payments Logic
     $('#btn-add-balloon').on('click', () => {
         if (balloonCount >= 4) return;
         balloonCount++;
@@ -269,10 +270,14 @@ function calculate() {
     const discPercent = parseFloat($('#input-discount').val()) || 0;
     let netPrice = adjustedTotal * (1 - (discPercent / 100));
 
-    // Mandatory Fees
-    const dpAmt    = netPrice * 0.20;
-    const dldFee   = netPrice * 0.04;
-    const adminFee = 5250;
+    // Custom Mandatory Fees Calculation
+    const dpAmt = netPrice * 0.20;
+    
+    // Fetch custom values from the dynamically added DOM inputs
+    const dldFeePercent = parseFloat($('#input-dld-fee').val()) || 0;
+    const adminFee = parseFloat($('#input-admin-fee').val()) || 0;
+    
+    const dldFee = netPrice * (dldFeePercent / 100);
 
     const table = $('#schedule-body');
     table.empty();
@@ -282,9 +287,9 @@ function calculate() {
     const today = new Date();
     const todayStr = addMonths(today, 0);
 
-    // Initial structure push (no installmentNum for upfront payments)
+    // Initial structure push (Dynamic fee labels and percentages mapped here)
     schedule.push({ monthOffset: 0, date: todayStr, desc: 'Downpayment', percent: '20%', amt: dpAmt });
-    schedule.push({ monthOffset: 0, date: todayStr, desc: 'DLD fee', percent: '4%', amt: dldFee });
+    schedule.push({ monthOffset: 0, date: todayStr, desc: 'DLD fee', percent: dldFeePercent + '%', amt: dldFee });
     schedule.push({ monthOffset: 0, date: todayStr, desc: 'Admin fee', percent: '-', amt: adminFee });
 
     // Official Milestones with specific `installmentNum` trackers
@@ -452,12 +457,12 @@ function calculate() {
     $('#dash-dp').text(formatter.format(dpAmt));
     $('#dash-fees').text(formatter.format(dldFee + adminFee));
 
-    // Export payload for PDF logic
+    // Export payload for PDF logic - Now pushing dynamic dldFeePercent
     window.currentExportData = {
         netPrice, unit, plan, schedule,
         furnished: isFurnished,
         pool: $('#toggle-pool').is(':checked'),
-        dpAmt, dldFee, adminFee
+        dpAmt, dldFee, adminFee, dldPercent: dldFeePercent
     };
 }
 
@@ -719,8 +724,10 @@ async function generateProfessionalPDF() {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.5);
     doc.setTextColor(...offWhite);
+    
+    // Dynamic bank instruction text based on custom DLD fee
     doc.text('BOOKING AND INSTALLMENT PAYMENTS', colB1, bankSectionTop + 6);
-    doc.text('FOR 4% DLD AND ADMIN FEE', colB2, bankSectionTop + 6);
+    doc.text(`FOR ${data.dldPercent}% DLD AND ADMIN FEE`, colB2, bankSectionTop + 6);
 
     const bankLeft = [
         ['Bank',           'United Bank Limited (UBL)'],
