@@ -276,35 +276,11 @@ function calculate() {
     // Apply Discount
     let netPrice = adjustedTotal * (1 - (discPercent / 100));
 
-    // Calculate Fixed Milestones (Before Completion and Before user DP)
-    let fixedInstallmentsPercent = 0;
-    if (plan === 'standard') {
-        fixedInstallmentsPercent = 35; // Standard: 7 fixed installments of 5% each
-    } else if (plan === '3yr') {
-        fixedInstallmentsPercent = 70; // 5 pre-handover (30%) + 3-year post-handover (40%) = 70%
-    } else if (plan === '5yr') {
-        fixedInstallmentsPercent = 70; // 5 pre-handover (30%) + 5-year post-handover (40%) = 70%
-    }
-
-    // Determine Maximum Allowable Downpayment to avoid negative completion balances
-    let maxDpPercent = 100 - fixedInstallmentsPercent;
-
-    // Retrieve and Sanitize User Downpayment %
-    let dpPercent = parseFloat($('#input-dp').val()) || 0;
-    if (dpPercent < 0) {
-        dpPercent = 0;
-        $('#input-dp').val(0);
-    }
+    // Dynamic Downpayment Reader
+    let dpPercent = parseFloat($('#input-dp').val());
+    if (isNaN(dpPercent) || dpPercent < 0) dpPercent = 0;
     
-    // Cap Downpayment if it exceeds available logical balance
-    $('#dp-notification').addClass('hidden');
-    if (dpPercent > maxDpPercent) {
-        dpPercent = maxDpPercent;
-        $('#input-dp').val(dpPercent);
-        $('#dp-notification').text(`Notice: Downpayment capped at ${maxDpPercent}% to balance standard installments.`).removeClass('hidden');
-    }
-
-    const dpAmt = netPrice * (dpPercent / 100);
+    let dpAmt = netPrice * (dpPercent / 100);
 
     // Custom Mandatory Fees Calculation
     const dldFeePercent = parseFloat($('#input-dld-fee').val()) || 0;
@@ -325,7 +301,7 @@ function calculate() {
     schedule.push({ monthOffset: 0, date: todayStr, desc: 'Admin fee', percent: '-', amt: adminFee });
 
     // Official Milestones with specific `installmentNum` trackers
-    // NOTE: Completion items are initially assigned a 'dummy' amount of 0. They are calculated dynamically below.
+    // NOTE: Completion items are initially assigned a 'dummy' amount of 0. They are dynamically calculated below.
     if (plan === 'standard') {
         $('#badge-plan').text('STANDARD 60/40 PLAN');
         schedule.push({ installmentNum: 1, monthOffset: 3, date: addMonths(today, 3), desc: '1st Installment', percent: '5%', amt: netPrice * 0.05 });
@@ -387,25 +363,45 @@ function calculate() {
     }
 
     // -----------------------------------------------------
-    // DYNAMIC BALANCE: Assign remainder to Completion Item
+    // DYNAMIC BALANCE & MATH SAFETIES
     // -----------------------------------------------------
     let completionItem = schedule.find(s => s.isCompletion);
+    $('#balloon-error').addClass('hidden'); // reset warning state
+    
     if (completionItem) {
-        // Sum all property-related schedule items EXCEPT the completion milestone and administrative fees
+        // Sum everything that reduces the principal balance
         let totalPropertyPayments = schedule.reduce((sum, s) => {
             if (s.isCompletion || s.desc === 'DLD fee' || s.desc === 'Admin fee') return sum;
-            return sum + s.amt;
+            return sum + s.amt; // Includes Downpayment and all Fixed Milestones
         }, 0);
 
         let remainingBalance = netPrice - totalPropertyPayments;
-        
-        // Precision correction for floating-point arithmetic
+
+        // Constraint: If the user inputs a DP% that mathematically drains the balance into the negative
+        if (remainingBalance < 0) {
+            const excess = Math.abs(remainingBalance);
+            dpAmt -= excess;
+            dpPercent = (dpAmt / netPrice) * 100;
+            
+            // Force the UI and the DP object to correct themselves
+            $('#input-dp').val(dpPercent.toFixed(1)); 
+            const dpItem = schedule.find(s => s.desc === 'Downpayment');
+            dpItem.amt = dpAmt;
+            dpItem.percent = dpPercent.toFixed(1) + '%';
+            
+            remainingBalance = 0;
+            $('#balloon-error').text(`Notice: Downpayment was automatically capped at ${dpPercent.toFixed(1)}% to balance fixed installments.`).removeClass('hidden text-red-500').addClass('text-orange-500');
+        } else {
+            $('#balloon-error').addClass('text-red-500').removeClass('text-orange-500');
+        }
+
+        // Float precision fix
         if (remainingBalance < 1 && remainingBalance > -1) remainingBalance = 0;
         
+        // Assign remainder dynamically to completion
         completionItem.amt = remainingBalance;
         completionItem.percent = ((remainingBalance / netPrice) * 100).toFixed(1) + '%';
     }
-
 
     // -----------------------------------------------------
     // INTEGRATION: Parse and Validate Balloon Payments
@@ -437,10 +433,12 @@ function calculate() {
         if (completionItem) {
             if (totalBalloonAmt > completionItem.amt) {
                 // Show Error and DO NOT inject balloons into the schedule
-                $('#balloon-error').text(`Error: Total balloon payments exceed available Completion balance (${formatter.format(completionItem.amt)}).`).removeClass('hidden');
+                $('#balloon-error').text(`Error: Total balloon payments exceed available Completion balance (${formatter.format(completionItem.amt)}).`).removeClass('hidden text-orange-500').addClass('text-red-500');
             } else {
                 // Clean state, proceed with injection
-                $('#balloon-error').addClass('hidden');
+                if (!$('#balloon-error').hasClass('text-orange-500')) {
+                    $('#balloon-error').addClass('hidden');
+                }
                 
                 // 1. Deduct total balloons from Completion
                 completionItem.amt -= totalBalloonAmt;
@@ -472,9 +470,6 @@ function calculate() {
                 });
             }
         }
-    } else {
-        // Hide error if zero balloon inputs
-        $('#balloon-error').addClass('hidden');
     }
 
     // Write to DOM
