@@ -163,9 +163,11 @@ const INVENTORY = [
 // 2. CALCULATION ENGINE
 // ==========================================
 const formatter = new Intl.NumberFormat('en-AE', { style: 'currency', currency: 'AED', maximumFractionDigits: 0 });
-const balloonMonths = [4, 10, 16, 22, 28];
 
-// --- FIX: Debounce utility to prevent calculate() firing on every keystroke ---
+// Application state for balloons
+let balloonCount = 0;
+
+// Debounce utility to prevent calculate() firing on every keystroke
 function debounce(fn, delay) {
     let timer;
     return function(...args) {
@@ -210,14 +212,67 @@ function updateUnitDropdown() {
 }
 
 function initCalculator() {
-    // Immediate recalc for dropdowns/checkboxes (fast, no text input)
+    // Immediate recalc for dropdowns/checkboxes
     $('#unit-select, #plan-mode, #toggle-furnish, #toggle-pool').on('change', calculate);
 
-    // --- FIX: Debounced recalc for number inputs (300ms wait after typing stops) ---
+    // Debounced recalc for text input
     const debouncedCalc = debounce(calculate, 300);
-    $('#input-discount, #input-balloon').on('input', debouncedCalc);
+    $('#input-discount').on('input', debouncedCalc);
 
+    // Dynamic Balloon Handlers
+    $('#btn-add-balloon').on('click', () => addBalloonRow());
+    
+    // Listen for inputs inside dynamic balloon rows
+    $('#balloon-list').on('input', '.balloon-amt, .balloon-month', debouncedCalc);
+    
+    // Listen for removal
+    $('#balloon-list').on('click', '.btn-remove-balloon', function() {
+        $(this).closest('.balloon-row').remove();
+        balloonCount--;
+        $('#btn-add-balloon').show(); // Show button again when count drops below 4
+        calculate();
+    });
+
+    // Provide one initial balloon row automatically to guide the user
+    addBalloonRow(4, 25000, true);
+    
     calculate();
+}
+
+/**
+ * Dynamically adds a new custom balloon payment row. Maximum 4 allowed.
+ */
+function addBalloonRow(defaultMonth = 4, defaultAmt = 25000, isInitialSetup = false) {
+    if (balloonCount >= 4) return;
+    
+    let monthOptions = '';
+    // Typically months run from 3 to 29 (30 is handover usually, so 29 is the last standard pre-handover month)
+    for(let i = 3; i <= 29; i++) {
+        let selected = (i === defaultMonth) ? 'selected' : '';
+        monthOptions += `<option value="${i}" ${selected}>Month ${i}</option>`;
+    }
+
+    const rowHTML = `
+        <div class="balloon-row flex gap-2 items-center">
+            <select class="balloon-month flex-1 p-3 rounded-xl text-xs font-bold border border-slate-200">
+                ${monthOptions}
+            </select>
+            <input type="number" value="${defaultAmt}" class="balloon-amt flex-1 p-3 rounded-xl text-xs font-bold text-center border border-slate-200" style="color: var(--color-egyptian-earth);" placeholder="Amount AED">
+            <button type="button" class="btn-remove-balloon px-4 py-3 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-colors font-black">X</button>
+        </div>
+    `;
+    
+    $('#balloon-list').append(rowHTML);
+    balloonCount++;
+
+    if (balloonCount >= 4) {
+        $('#btn-add-balloon').hide();
+    }
+    
+    // Trigger calculation if user clicks to add
+    if (!isInitialSetup) {
+        calculate();
+    }
 }
 
 function calculate() {
@@ -251,7 +306,24 @@ function calculate() {
     const discPercent = parseFloat($('#input-discount').val()) || 0;
     netPrice = netPrice * (1 - (discPercent / 100));
 
-    const balloonAmt = parseFloat($('#input-balloon').val()) || 0;
+    // ── Parse Custom Balloon Payments ──
+    let balloons = [];
+    let sumOfBalloons = 0;
+    
+    $('.balloon-row').each(function() {
+        let m = parseInt($(this).find('.balloon-month').val());
+        let a = parseFloat($(this).find('.balloon-amt').val()) || 0;
+        
+        // If a user accidentally selects the same month multiple times, consolidate it
+        let existing = balloons.find(b => b.month === m);
+        if (existing) {
+            existing.amt += a;
+        } else {
+            balloons.push({ month: m, amt: a });
+        }
+        sumOfBalloons += a;
+    });
+
     let schedule = [];
 
     const dpAmt      = netPrice * 0.10;
@@ -259,30 +331,45 @@ function calculate() {
     schedule.push({ m: 'BOOKING', desc: 'DOWN PAYMENT (10%)',        amt: dpAmt,      type: 'milestone' });
     schedule.push({ m: 'MONTH 2', desc: 'SECOND INSTALLMENT (10%)', amt: secondInst,  type: 'milestone' });
 
+    // Target liquidity generated during construction (before handover)
     const bridgeTarget = (plan === '7030') ? 0.50 : 0.30;
     const bridgeTotal  = netPrice * bridgeTarget;
-    const sumOfBalloons = balloonAmt * balloonMonths.length;
+    
+    // Validation: Total balloon cannot exceed the bridge amount, otherwise monthly installments are negative
+    if (sumOfBalloons >= bridgeTotal) {
+        $('#balloon-error')
+            .removeClass('hidden')
+            .text(`Warning: Total balloon payments (${formatter.format(sumOfBalloons)}) exceed or equal the allowable bridge limit (${formatter.format(bridgeTotal)}). Please reduce the amount.`);
+    } else {
+        $('#balloon-error').addClass('hidden');
+    }
+
     const monthlyInst  = (bridgeTotal - sumOfBalloons) / 28;
 
-    // --- FIX: Build HTML as an array and join once, then inject (single DOM write) ---
     const rows = [];
 
     for (let i = 1; i <= 30; i++) {
-        if (i === 2) continue;
+        if (i === 2) continue; // Already handled month 2 milestone
+        
         let rowType = 'monthly';
         let desc    = 'MONTHLY INSTALLMENT';
         let amt     = monthlyInst;
 
-        if (balloonMonths.includes(i)) {
+        // Check if there is a custom balloon for the current month
+        let matchingBalloon = balloons.find(b => b.month === i);
+
+        if (matchingBalloon) {
             rowType = 'balloon';
             desc    = 'MONTHLY + BALLOON PAYMENT';
-            amt     = monthlyInst + balloonAmt;
+            amt     = monthlyInst + matchingBalloon.amt;
         }
+        
         if (i === 30) {
             rowType = 'milestone';
             desc    = `HANDOVER & POSSESSION (${plan === '7030' ? '30%' : '10%'})`;
             amt     = netPrice * (plan === '7030' ? 0.30 : 0.10);
         }
+        
         schedule.push({ m: 'MONTH ' + i, desc, amt, type: rowType });
     }
 
@@ -301,6 +388,7 @@ function calculate() {
         else if (row.type === 'balloon') rowClass = 'row-balloon';
         const amtColor = row.type === 'milestone' ? 'var(--color-egyptian-earth)' : 'var(--color-emerald-green)';
         const descColor = row.type === 'milestone' ? 'var(--color-egyptian-earth)' : '#64748B';
+        
         rows.push(`
             <tr class="${rowClass}" style="color: var(--color-nor-de-vigne);">
                 <td class="p-4 uppercase text-[10px] font-black">${row.m}</td>
@@ -317,10 +405,13 @@ function calculate() {
     $('#dash-monthly').text(formatter.format(monthlyInst));
     $('#badge-plan').text(plan === '7030' ? '70/30 PLAN' : '60/40 POST-HANDOVER');
 
+    // Export payload for PDF logic
     window.currentExportData = {
         netPrice, unit, plan, schedule,
         furnished: isFurnished,
-        pool: $('#toggle-pool').is(':checked')
+        pool: $('#toggle-pool').is(':checked'),
+        balloons: balloons, // Sorted or custom array
+        sumOfBalloons: sumOfBalloons
     };
 }
 
@@ -360,23 +451,22 @@ async function generateProfessionalPDF() {
         loadImage(basePath + '9.jpg')
     ]);
 
-    // ── PAGE 1: TITLE (use jsPDF's default first page — no addPage) ──
+    // ── PAGE 1: TITLE (use jsPDF's default first page) ──
     if (imgTitle) {
         doc.addImage(imgTitle, 'JPEG', 0, 0, pageW, pageH);
     } else {
         doc.setFillColor(13, 54, 45);
         doc.rect(0, 0, pageW, pageH, 'F');
     }
-    // Unit number — clean elegant text in the right-center area, matching brand screenshot
-    // Positioned right of centre, vertically centred ~55% down (below where the logo sits)
-    const unitTextX = pageW * 0.62;  // right-of-centre
-    const unitTextY = pageH * 0.60;  // just below vertical mid
+    
+    const unitTextX = pageW * 0.62;  
+    const unitTextY = pageH * 0.60;  
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(13);
     doc.setFont('helvetica', 'normal');
-    doc.setCharSpace(4);   // wide letter-spacing like the screenshot
+    doc.setCharSpace(4);   
     doc.text(`UNIT ${data.unit.u}`, unitTextX, unitTextY);
-    doc.setCharSpace(0);   // reset
+    doc.setCharSpace(0);   
 
     // ── PAGE 2: MAP ───────────────────────────────────────────────────
     doc.addPage();
@@ -408,7 +498,6 @@ async function generateProfessionalPDF() {
     doc.setFillColor(..._dkGreen);
     doc.rect(0, 0, pageW, pageH, 'F');
 
-    // Brand header — top-left
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
     doc.setCharSpace(0);
@@ -422,12 +511,10 @@ async function generateProfessionalPDF() {
     doc.text('ELEVATED CO-LIVING', 18, 30);
     doc.setCharSpace(0);
 
-    // Separator line
     doc.setDrawColor(..._ltGreen);
     doc.setLineWidth(0.25);
     doc.line(18, 35, pageW - 18, 35);
 
-    // Large unit number
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(36);
     doc.setCharSpace(1);
@@ -435,7 +522,6 @@ async function generateProfessionalPDF() {
     doc.text(`UNIT ${data.unit.u}`, 18, 62);
     doc.setCharSpace(0);
 
-    // Spec rows — label column at 18, value column at 100
     const specRows = [
         ['FLOOR NO.',    `${data.unit.floor}`],
         ['UNIT TYPE',    data.unit.type],
@@ -451,13 +537,11 @@ async function generateProfessionalPDF() {
     const valueX  = 110;
 
     specRows.forEach(([label, val]) => {
-        // Row separator — subtle
         doc.setDrawColor(255, 255, 255);
         doc.setGState(new doc.GState({ opacity: 0.08 }));
         doc.line(labelX, specY - 4, pageW - 18, specY - 4);
         doc.setGState(new doc.GState({ opacity: 1 }));
 
-        // Label
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
         doc.setCharSpace(1);
@@ -465,7 +549,6 @@ async function generateProfessionalPDF() {
         doc.text(label, labelX, specY);
         doc.setCharSpace(0);
 
-        // Value
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
         doc.setTextColor(..._offWhite);
@@ -481,15 +564,13 @@ async function generateProfessionalPDF() {
     const offWhite   = [238, 232, 213];
     const dimWhite   = [155, 160, 152];
 
-    // ── Full-page dark background ──
     doc.setFillColor(...darkGreen);
     doc.rect(0, 0, pageW, pageH, 'F');
 
-    const ML = 16;   // left margin
-    const MR = 16;   // right margin
-    const CW = pageW - ML - MR;  // 265mm usable width
+    const ML = 16;   
+    const MR = 16;   
+    const CW = pageW - ML - MR;  
 
-    // ── Header row ──
     const planLabel = data.plan === '7030' ? '70 | 30 PAYMENT PLAN' : '60 | 40 PAYMENT PLAN';
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(22);
@@ -497,7 +578,6 @@ async function generateProfessionalPDF() {
     doc.setTextColor(...offWhite);
     doc.text(planLabel, ML, 18);
 
-    // Purchase price — right-aligned on same line
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(...lightGreen);
@@ -505,19 +585,16 @@ async function generateProfessionalPDF() {
     doc.setTextColor(...offWhite);
     doc.text(formatter.format(data.netPrice), pageW - MR - 65 + 42, 18);
 
-    // Separator
     doc.setDrawColor(...lightGreen);
     doc.setLineWidth(0.3);
     doc.line(ML, 22, pageW - MR, 22);
 
-    // ── Column definitions (5 columns balanced across 265mm) ──
-    // Col widths: 60 | 32 | 55 | 55 | 63 = 265mm
     const C = [
-        { label: 'INSTALLMENT',          x: ML,               w: 60 },
-        { label: '% OF PURCHASE',        x: ML + 62,          w: 32 },
-        { label: 'AMOUNT (AED)',          x: ML + 62 + 34,     w: 55 },
-        { label: 'PAYMENT DATE',         x: ML + 62 + 34 + 57, w: 55 },
-        { label: 'MILESTONE',            x: ML + 62 + 34 + 57 + 57, w: 63 },
+        { label: 'INSTALLMENT',         x: ML,                w: 60 },
+        { label: '% OF PURCHASE',       x: ML + 62,           w: 32 },
+        { label: 'AMOUNT (AED)',        x: ML + 62 + 34,      w: 55 },
+        { label: 'PAYMENT DATE',        x: ML + 62 + 34 + 57, w: 55 },
+        { label: 'MILESTONE',           x: ML + 62 + 34 + 57 + 57, w: 63 },
     ];
 
     const colHeaderY = 30;
@@ -532,15 +609,14 @@ async function generateProfessionalPDF() {
     doc.line(ML, colHeaderY + 3, pageW - MR, colHeaderY + 3);
     doc.setGState(new doc.GState({ opacity: 1 }));
 
-    // ── Data calculation ──
+    // Core variables
     const np           = data.netPrice;
     const plan         = data.plan;
     const dpAmt        = np * 0.10;
     const secondInst   = np * 0.10;
-    const balloonAmt   = parseFloat($('#input-balloon').val()) || 0;
     const bridgeTarget = plan === '7030' ? 0.50 : 0.30;
     const bridgeTotal  = np * bridgeTarget;
-    const sumBalloons  = balloonAmt * balloonMonths.length;
+    const sumBalloons  = data.sumOfBalloons || 0;
     const monthlyInst  = (bridgeTotal - sumBalloons) / 28;
     const handoverPct  = plan === '7030' ? 30 : 10;
     const handoverAmt  = np * (handoverPct / 100);
@@ -548,7 +624,6 @@ async function generateProfessionalPDF() {
     const dldFee       = (np * 0.04).toLocaleString('en-AE', {maximumFractionDigits:0});
     const fmt          = v => v.toLocaleString('en-AE', {maximumFractionDigits:0});
 
-    // Each row: label lines[], pct, amtLines[], dateLines[], ms
     const tableRows = [
         {
             labelLines: ['BOOKING AMOUNT', '+ FEES'],
@@ -570,25 +645,38 @@ async function generateProfessionalPDF() {
             amtLines:  [fmt(monthlyInst) + ' / MONTH'],
             dateLines: ['MONTHS 3 – 30'],
             ms:        '—'
-        },
-        {
-            labelLines: ['BALLOON PAYMENTS', `(MONTHS 4, 10, 16, 22, 28)`],
-            pct:        '—',
-            amtLines:   [
-                fmt(balloonAmt) + ' EACH',
-                fmt(monthlyInst + balloonAmt) + ' TOTAL / BALLOON MONTH'
-            ],
-            dateLines:  ['5 OCCURRENCES'],
-            ms:         '—'
-        },
-        {
-            labelLines: ['HANDOVER'],
-            pct: handoverPct + '%',
-            amtLines:  [fmt(handoverAmt)],
-            dateLines: ['ON HANDOVER'],
-            ms:        'COMPLETION'
-        },
+        }
     ];
+
+    // Inject Custom Balloon Block Dynamically
+    if (data.balloons && data.balloons.length > 0) {
+        // Sort balloons logically for the UI display
+        const sortedBalloons = data.balloons.sort((a,b) => a.month - b.month);
+        
+        const bAmtLines  = sortedBalloons.map(b => fmt(b.amt));
+        const bDateLines = sortedBalloons.map(b => `MONTH ${b.month}`);
+        
+        // Append total row
+        bAmtLines.push(fmt(sumBalloons) + ' TOTAL');
+        bDateLines.push('');
+        
+        tableRows.push({
+            labelLines: ['CUSTOM BALLOON PAYMENTS', `(${sortedBalloons.length} OCCURRENCES)`],
+            pct:        '—',
+            amtLines:   bAmtLines,
+            dateLines:  bDateLines,
+            ms:         '—'
+        });
+    }
+
+    tableRows.push({
+        labelLines: ['HANDOVER'],
+        pct: handoverPct + '%',
+        amtLines:  [fmt(handoverAmt)],
+        dateLines: ['ON HANDOVER'],
+        ms:        'COMPLETION'
+    });
+
     if (plan === '6040') {
         const postMonthly = (np * 0.40) / 36;
         tableRows.push({
@@ -599,23 +687,15 @@ async function generateProfessionalPDF() {
             ms: '—'
         });
     }
-    // Hide balloon row if balloon amount is 0
-    const filteredRows = tableRows.filter((r, i) => {
-        if (r.labelLines[0] === 'BALLOON PAYMENTS' && balloonAmt === 0) return false;
-        return true;
-    });
 
-    // ── Draw table rows ──
-    const lineH    = 4.8;   // line height within a multi-line cell
-    const rowPad   = 6;     // base top-padding per row
-    const rowSep   = 14;    // fixed row height (gap between row baselines for single-line rows)
+    const lineH    = 4.8;  
+    const rowPad   = 6;    
     let rowY       = colHeaderY + 10;
 
-    filteredRows.forEach((row) => {
+    tableRows.forEach((row) => {
         const maxLines = Math.max(row.labelLines.length, row.amtLines.length, row.dateLines.length);
         const rowHeight = rowPad + maxLines * lineH + 4;
 
-        // Subtle row separator at bottom
         doc.setDrawColor(255, 255, 255);
         doc.setGState(new doc.GState({ opacity: 0.10 }));
         doc.line(ML, rowY + rowHeight, pageW - MR, rowY + rowHeight);
@@ -624,39 +704,32 @@ async function generateProfessionalPDF() {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8.5);
 
-        // Col 0: label
         doc.setTextColor(...offWhite);
         row.labelLines.forEach((l, i) => doc.text(l, C[0].x, rowY + rowPad + i * lineH));
 
-        // Col 1: %
         doc.text(row.pct, C[1].x, rowY + rowPad);
 
-        // Col 2: amount (first line bright, secondary lines dimmer)
         row.amtLines.forEach((a, i) => {
-            doc.setTextColor(...(i === 0 ? offWhite : dimWhite));
+            // First lines are bright, the appended 'Total' line or secondary info is dimmer
+            doc.setTextColor(...((i === row.amtLines.length - 1 && a.includes('TOTAL')) ? dimWhite : offWhite));
             doc.setFontSize(i === 0 ? 8.5 : 7.5);
             doc.text(a, C[2].x, rowY + rowPad + i * lineH);
         });
 
-        // Col 3: date
         doc.setTextColor(...offWhite);
         doc.setFontSize(8.5);
         row.dateLines.forEach((d, i) => doc.text(d, C[3].x, rowY + rowPad + i * lineH));
 
-        // Col 4: milestone
         doc.text(row.ms, C[4].x, rowY + rowPad);
 
         rowY += rowHeight;
     });
 
-    // ── Bank Details Section ─────────────────────────────────────────
-    // Position bank section in lower quarter of the page, well-spaced
     const bankSectionTop = pageH - 62;
     doc.setDrawColor(...lightGreen);
     doc.setLineWidth(0.3);
     doc.line(ML, bankSectionTop, pageW - MR, bankSectionTop);
 
-    // Two-column labels
     const colB1 = ML;
     const colB2 = ML + CW / 2 + 4;
 
@@ -709,7 +782,7 @@ async function generateProfessionalPDF() {
         doc.text('Subtitle.jpg missing — place in assets/', pageW/2, pageH/2, {align:'center'});
     }
 
-    // ── PAGE 6: PLAIN TITLE PAGE (no unit number — closing image) ────────
+    // ── PAGE 6: PLAIN TITLE PAGE ────────
     doc.addPage();
     if (imgTitle) {
         doc.addImage(imgTitle, 'JPEG', 0, 0, pageW, pageH);
