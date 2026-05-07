@@ -177,7 +177,6 @@ let balloonCount = 0;
 $(document).ready(() => {
     initFilters();
     // Instant calculations bound directly to input/change without debounce
-    // Added new listener hooks for the newly introduced custom fee inputs
     $('#unit-select, #plan-mode, #toggle-furnish, #toggle-pool').on('change', calculate);
     $('#input-discount, #input-dld-fee, #input-admin-fee').on('input change', calculate);
     
@@ -232,6 +231,15 @@ function updateUnitDropdown() {
     $('#unit-select').trigger('change');
 }
 
+// ==========================================
+// PLACEHOLDER: Excess Discount Logic
+// ==========================================
+function processExcessDiscount(discountValue) {
+    // This function acts as a placeholder for any future approval routing, 
+    // API calls, or logging mechanisms whenever a discount above 15% is applied.
+    console.warn(`Attention: A discount of ${discountValue}% has been applied. Additional approval may be required.`);
+}
+
 // Master Calculation Engine
 function calculate() {
     const uId  = $('#unit-select').val();
@@ -266,8 +274,21 @@ function calculate() {
     if (!isFurnished) adjustedTotal -= 25000;
     if (canHavePool && $('#toggle-pool').is(':checked')) adjustedTotal += 100000;
 
+    // Retrieve and Constrain Discount
+    let discPercent = parseFloat($('#input-discount').val()) || 0;
+    
+    // Constrain discount to absolute maximum of 99
+    if (discPercent > 99) {
+        discPercent = 99;
+        $('#input-discount').val(99);
+    }
+    
+    // Trigger placeholder logic if it exceeds standard max of 15
+    if (discPercent > 15) {
+        processExcessDiscount(discPercent);
+    }
+
     // Apply Discount
-    const discPercent = parseFloat($('#input-discount').val()) || 0;
     let netPrice = adjustedTotal * (1 - (discPercent / 100));
 
     // Custom Mandatory Fees Calculation
