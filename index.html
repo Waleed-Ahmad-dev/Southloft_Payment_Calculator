@@ -138,8 +138,8 @@
             <!-- Right Column: Dashboard & Schedule -->
             <div class="lg:col-span-8 space-y-8">
                 
-                <!-- Metrics Display -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Metrics Display (Grid updated to 4 columns to accommodate 1st Year box) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                     <div class="exec-card p-8 border-l-4" style="border-color: var(--color-egyptian-earth);">
                         <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Net Investment</p>
                         <h2 id="dash-net" class="text-3xl font-black mt-2" style="color: var(--color-egyptian-earth);">AED 0</h2>
@@ -153,6 +153,13 @@
                     <div class="exec-card p-8 border-l-4" style="border-color: var(--color-wasabi);">
                         <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">DLD & Admin Fees</p>
                         <h2 id="dash-fees" class="text-3xl font-black mt-2" style="color: #5A8A4D;">AED 0</h2>
+                    </div>
+
+                    <!-- New 1st Year Calculation Box -->
+                    <div id="card-first-year" class="exec-card p-8 border-l-4 transition-colors duration-300">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">1st Year Equity</p>
+                        <h2 id="dash-first-year-pct" class="text-3xl font-black mt-2 transition-colors duration-300">0%</h2>
+                        <p id="dash-first-year-amt" class="text-[10px] font-bold text-slate-500 mt-1">AED 0</p>
                     </div>
                 </div>
 

@@ -483,6 +483,39 @@ function calculate() {
     }
 
     // -----------------------------------------------
+    // 1ST YEAR EQUITY CALCULATION (DP + Installments <= 12m)
+    // -----------------------------------------------
+    let firstYearTotal = 0;
+    schedule.forEach(item => {
+        // Exclude generic fees, include Downpayment and any property installment up to 12 months
+        if (item.desc !== 'DLD fee' && item.desc !== 'Admin fee' && item.monthOffset <= 12) {
+            firstYearTotal += item.amt;
+        }
+    });
+
+    const firstYearPct = netPrice > 0 ? (firstYearTotal / netPrice) * 100 : 0;
+
+    const $fyCard    = $('#card-first-year');
+    const $fyPctText = $('#dash-first-year-pct');
+    const $fyAmtText = $('#dash-first-year-amt');
+
+    $fyPctText.text(firstYearPct.toFixed(1) + '%');
+    $fyAmtText.text(formatter.format(firstYearTotal));
+
+    // Reset indicator classes
+    $fyCard.removeClass('border-green-500 border-red-500');
+    $fyPctText.removeClass('text-green-600 text-red-600');
+
+    // Apply color logic based on the 40% threshold
+    if (firstYearPct >= 40) {
+        $fyCard.addClass('border-green-500');
+        $fyPctText.addClass('text-green-600');
+    } else {
+        $fyCard.addClass('border-red-500');
+        $fyPctText.addClass('text-red-600');
+    }
+
+    // -----------------------------------------------
     // RENDER TABLE
     // -----------------------------------------------
     let rowsHTML = '';
