@@ -176,9 +176,10 @@ let balloonCount = 0;
 
 $(document).ready(() => {
     initFilters();
-    // Instant calculations bound directly to input/change without debounce
+    
+    // Bind all inputs and toggles to the calculation engine
     $('#unit-select, #plan-mode, #toggle-furnish, #toggle-pool').on('change', calculate);
-    $('#input-discount, #input-dld-fee, #input-admin-fee').on('input change', calculate);
+    $('#input-dp, #input-discount, #input-dld-fee, #input-admin-fee').on('input change', calculate);
     
     // Setup Custom Balloon Payments Logic
     $('#btn-add-balloon').on('click', () => {
@@ -231,15 +232,6 @@ function updateUnitDropdown() {
     $('#unit-select').trigger('change');
 }
 
-// ==========================================
-// PLACEHOLDER: Excess Discount Logic
-// ==========================================
-function processExcessDiscount(discountValue) {
-    // This function acts as a placeholder for any future approval routing, 
-    // API calls, or logging mechanisms whenever a discount above 15% is applied.
-    console.warn(`Attention: A discount of ${discountValue}% has been applied. Additional approval may be required.`);
-}
-
 // Master Calculation Engine
 function calculate() {
     const uId  = $('#unit-select').val();
@@ -276,28 +268,47 @@ function calculate() {
 
     // Retrieve and Constrain Discount
     let discPercent = parseFloat($('#input-discount').val()) || 0;
-    
-    // Constrain discount to absolute maximum of 99
     if (discPercent > 99) {
         discPercent = 99;
         $('#input-discount').val(99);
-    }
-    
-    // Trigger placeholder logic if it exceeds standard max of 15
-    if (discPercent > 15) {
-        processExcessDiscount(discPercent);
     }
 
     // Apply Discount
     let netPrice = adjustedTotal * (1 - (discPercent / 100));
 
-    // Custom Mandatory Fees Calculation
-    const dpAmt = netPrice * 0.20;
+    // Calculate Fixed Milestones (Before Completion and Before user DP)
+    let fixedInstallmentsPercent = 0;
+    if (plan === 'standard') {
+        fixedInstallmentsPercent = 35; // Standard: 7 fixed installments of 5% each
+    } else if (plan === '3yr') {
+        fixedInstallmentsPercent = 70; // 5 pre-handover (30%) + 3-year post-handover (40%) = 70%
+    } else if (plan === '5yr') {
+        fixedInstallmentsPercent = 70; // 5 pre-handover (30%) + 5-year post-handover (40%) = 70%
+    }
+
+    // Determine Maximum Allowable Downpayment to avoid negative completion balances
+    let maxDpPercent = 100 - fixedInstallmentsPercent;
+
+    // Retrieve and Sanitize User Downpayment %
+    let dpPercent = parseFloat($('#input-dp').val()) || 0;
+    if (dpPercent < 0) {
+        dpPercent = 0;
+        $('#input-dp').val(0);
+    }
     
-    // Fetch custom values from the dynamically added DOM inputs
+    // Cap Downpayment if it exceeds available logical balance
+    $('#dp-notification').addClass('hidden');
+    if (dpPercent > maxDpPercent) {
+        dpPercent = maxDpPercent;
+        $('#input-dp').val(dpPercent);
+        $('#dp-notification').text(`Notice: Downpayment capped at ${maxDpPercent}% to balance standard installments.`).removeClass('hidden');
+    }
+
+    const dpAmt = netPrice * (dpPercent / 100);
+
+    // Custom Mandatory Fees Calculation
     const dldFeePercent = parseFloat($('#input-dld-fee').val()) || 0;
     const adminFee = parseFloat($('#input-admin-fee').val()) || 0;
-    
     const dldFee = netPrice * (dldFeePercent / 100);
 
     const table = $('#schedule-body');
@@ -308,12 +319,13 @@ function calculate() {
     const today = new Date();
     const todayStr = addMonths(today, 0);
 
-    // Initial structure push (Dynamic fee labels and percentages mapped here)
-    schedule.push({ monthOffset: 0, date: todayStr, desc: 'Downpayment', percent: '20%', amt: dpAmt });
+    // Initial structure push
+    schedule.push({ monthOffset: 0, date: todayStr, desc: 'Downpayment', percent: dpPercent + '%', amt: dpAmt });
     schedule.push({ monthOffset: 0, date: todayStr, desc: 'DLD fee', percent: dldFeePercent + '%', amt: dldFee });
     schedule.push({ monthOffset: 0, date: todayStr, desc: 'Admin fee', percent: '-', amt: adminFee });
 
     // Official Milestones with specific `installmentNum` trackers
+    // NOTE: Completion items are initially assigned a 'dummy' amount of 0. They are calculated dynamically below.
     if (plan === 'standard') {
         $('#badge-plan').text('STANDARD 60/40 PLAN');
         schedule.push({ installmentNum: 1, monthOffset: 3, date: addMonths(today, 3), desc: '1st Installment', percent: '5%', amt: netPrice * 0.05 });
@@ -323,7 +335,7 @@ function calculate() {
         schedule.push({ installmentNum: 5, monthOffset: 15, date: addMonths(today, 15), desc: '5th Installment', percent: '5%', amt: netPrice * 0.05 });
         schedule.push({ installmentNum: 6, monthOffset: 18, date: addMonths(today, 18), desc: '6th Installment', percent: '5%', amt: netPrice * 0.05 });
         schedule.push({ installmentNum: 7, monthOffset: 21, date: addMonths(today, 21), desc: '7th Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ monthOffset: 24, isCompletion: true, date: 'On completion', desc: 'Completion', percent: '40%', amt: netPrice * 0.40 });
+        schedule.push({ monthOffset: 24, isCompletion: true, date: 'On completion', desc: 'Completion', percent: '0%', amt: 0 });
         
     } else if (plan === '3yr') {
         $('#badge-plan').text('3-YEAR POST HANDOVER');
@@ -332,7 +344,7 @@ function calculate() {
         schedule.push({ installmentNum: 3, monthOffset: 13, date: addMonths(today, 13), desc: '3rd Installment', percent: '10%', amt: netPrice * 0.10 });
         schedule.push({ installmentNum: 4, monthOffset: 17, date: addMonths(today, 17), desc: '4th Installment', percent: '5%', amt: netPrice * 0.05 });
         schedule.push({ installmentNum: 5, monthOffset: 21, date: addMonths(today, 21), desc: '5th Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ installmentNum: 6, monthOffset: 24, isCompletion: true, date: 'On completion', desc: '6th Installment', percent: '10%', amt: netPrice * 0.10 });
+        schedule.push({ installmentNum: 6, monthOffset: 24, isCompletion: true, date: 'On completion', desc: '6th Installment', percent: '0%', amt: 0 });
         
         // 3-Year Post Handover Schedule
         const phMonths = [3, 6, 9, 12, 16, 18, 21, 24, 27, 30, 33, 36];
@@ -357,7 +369,7 @@ function calculate() {
         schedule.push({ installmentNum: 3, monthOffset: 13, date: addMonths(today, 13), desc: '3rd Installment', percent: '10%', amt: netPrice * 0.10 });
         schedule.push({ installmentNum: 4, monthOffset: 17, date: addMonths(today, 17), desc: '4th Installment', percent: '5%', amt: netPrice * 0.05 });
         schedule.push({ installmentNum: 5, monthOffset: 21, date: addMonths(today, 21), desc: '5th Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ installmentNum: 6, monthOffset: 24, isCompletion: true, date: 'On completion', desc: '6th Installment', percent: '10%', amt: netPrice * 0.10 });
+        schedule.push({ installmentNum: 6, monthOffset: 24, isCompletion: true, date: 'On completion', desc: '6th Installment', percent: '0%', amt: 0 });
         
         // 5-Year Post Handover Schedule
         const completionDate = new Date(today);
@@ -373,6 +385,27 @@ function calculate() {
             });
         }
     }
+
+    // -----------------------------------------------------
+    // DYNAMIC BALANCE: Assign remainder to Completion Item
+    // -----------------------------------------------------
+    let completionItem = schedule.find(s => s.isCompletion);
+    if (completionItem) {
+        // Sum all property-related schedule items EXCEPT the completion milestone and administrative fees
+        let totalPropertyPayments = schedule.reduce((sum, s) => {
+            if (s.isCompletion || s.desc === 'DLD fee' || s.desc === 'Admin fee') return sum;
+            return sum + s.amt;
+        }, 0);
+
+        let remainingBalance = netPrice - totalPropertyPayments;
+        
+        // Precision correction for floating-point arithmetic
+        if (remainingBalance < 1 && remainingBalance > -1) remainingBalance = 0;
+        
+        completionItem.amt = remainingBalance;
+        completionItem.percent = ((remainingBalance / netPrice) * 100).toFixed(1) + '%';
+    }
+
 
     // -----------------------------------------------------
     // INTEGRATION: Parse and Validate Balloon Payments
@@ -400,9 +433,7 @@ function calculate() {
         // Warn the user that the installment number doesn't exist for this plan structure
         $('#balloon-error').text(`Error: Installment number(s) ${invalidInsts.join(', ')} do not exist in this plan.`).removeClass('hidden');
     } else if (balloons.length > 0) {
-        // Ensure balloons don't exceed the final Completion lump sum
-        let completionItem = schedule.find(s => s.isCompletion);
-        
+        // Ensure balloons don't exceed the dynamically calculated Completion balance
         if (completionItem) {
             if (totalBalloonAmt > completionItem.amt) {
                 // Show Error and DO NOT inject balloons into the schedule
@@ -483,12 +514,12 @@ function calculate() {
     $('#dash-dp').text(formatter.format(dpAmt));
     $('#dash-fees').text(formatter.format(dldFee + adminFee));
 
-    // Export payload for PDF logic - Now pushing dynamic dldFeePercent
+    // Export payload for PDF logic
     window.currentExportData = {
         netPrice, unit, plan, schedule,
         furnished: isFurnished,
         pool: $('#toggle-pool').is(':checked'),
-        dpAmt, dldFee, adminFee, dldPercent: dldFeePercent
+        dpAmt, dldFee, adminFee, dldPercent: dldFeePercent, dpPercent
     };
 }
 
@@ -605,6 +636,7 @@ async function generateProfessionalPDF() {
         ['UNIT TYPE',    data.unit.type],
         ['TOTAL AREA',   `${data.unit.area.toFixed(2)} SQFT`],
         ['PURCHASE PRICE', formatter.format(data.netPrice)],
+        ['DOWNPAYMENT',  `${data.dpPercent}%`],
         ['FURNISHING',   data.furnished ? 'FULLY FURNISHED' : 'UNFURNISHED'],
         ['PRIVATE POOL', data.pool      ? 'INCLUDED'        : 'NOT INCLUDED'],
     ];
