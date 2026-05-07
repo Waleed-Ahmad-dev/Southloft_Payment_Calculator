@@ -14,7 +14,7 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./styles.css?v=1.0.1">
+    <link rel="stylesheet" href="./styles.css?v=1.0.2">
 </head>
 <body class="min-h-screen">
 
@@ -73,7 +73,6 @@
                 <section class="exec-card p-8 space-y-6">
                     <h2 class="text-sm font-black uppercase tracking-widest border-b pb-4" style="color: var(--color-emerald-green); border-color: rgba(0,77,64,0.1);">Financial Parameters</h2>
                     
-                    <!-- Integrated DP field into the grid -->
                     <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
                         <div class="space-y-2">
                             <label class="text-[10px] font-black text-slate-500 uppercase">DP %</label>
@@ -138,25 +137,25 @@
             <!-- Right Column: Dashboard & Schedule -->
             <div class="lg:col-span-8 space-y-8">
                 
-                <!-- Metrics Display (Grid updated to 4 columns to accommodate 1st Year box) -->
+                <!-- Metrics Display -->
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                    <div class="exec-card p-8 border-l-4" style="border-color: var(--color-egyptian-earth);">
+                    <div class="exec-card p-8" style="border-color: var(--color-egyptian-earth);">
                         <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Net Investment</p>
                         <h2 id="dash-net" class="text-3xl font-black mt-2" style="color: var(--color-egyptian-earth);">AED 0</h2>
                     </div>
                     
-                    <div class="exec-card p-8 border-l-4" style="border-color: var(--color-emerald-green);">
+                    <div class="exec-card p-8" style="border-color: var(--color-emerald-green);">
                         <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Initial Liquidity</p>
                         <h2 id="dash-dp" class="text-3xl font-black mt-2" style="color: var(--color-emerald-green);">AED 0</h2>
                     </div>
                     
-                    <div class="exec-card p-8 border-l-4" style="border-color: var(--color-wasabi);">
+                    <div class="exec-card p-8" style="border-color: var(--color-wasabi);">
                         <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">DLD & Admin Fees</p>
                         <h2 id="dash-fees" class="text-3xl font-black mt-2" style="color: #5A8A4D;">AED 0</h2>
                     </div>
 
-                    <!-- New 1st Year Calculation Box -->
-                    <div id="card-first-year" class="exec-card p-8 border-l-4 transition-colors duration-300">
+                    <!-- 1st Year Calculation Box (border color set via JS) -->
+                    <div id="card-first-year" class="exec-card p-8">
                         <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">1st Year Equity</p>
                         <h2 id="dash-first-year-pct" class="text-3xl font-black mt-2 transition-colors duration-300">0%</h2>
                         <p id="dash-first-year-amt" class="text-[10px] font-bold text-slate-500 mt-1">AED 0</p>
@@ -193,6 +192,6 @@
         </main>
     </div>
 
-    <script src="./script.js?v=1.0.1"></script>
+    <script src="./script.js?v=1.0.2"></script>
 </body>
 </html>

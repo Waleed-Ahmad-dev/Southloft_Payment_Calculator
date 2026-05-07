@@ -502,17 +502,14 @@ function calculate() {
     $fyPctText.text(firstYearPct.toFixed(1) + '%');
     $fyAmtText.text(formatter.format(firstYearTotal));
 
-    // Reset indicator classes
-    $fyCard.removeClass('border-green-500 border-red-500');
-    $fyPctText.removeClass('text-green-600 text-red-600');
-
-    // Apply color logic based on the 40% threshold
+    // Fix: We must apply colors using inline CSS rather than Tailwind classes 
+    // because Tailwind CDN JIT compiler ignores dynamically added string classes in external scripts.
     if (firstYearPct >= 40) {
-        $fyCard.addClass('border-green-500');
-        $fyPctText.addClass('text-green-600');
+        $fyCard.css('border-color', 'var(--color-wasabi)'); // Match the green metric box style
+        $fyPctText.css('color', 'var(--color-emerald-green)');
     } else {
-        $fyCard.addClass('border-red-500');
-        $fyPctText.addClass('text-red-600');
+        $fyCard.css('border-color', '#EF4444'); // Tailwind red-500 equivalent
+        $fyPctText.css('color', '#DC2626'); // Tailwind red-600 equivalent
     }
 
     // -----------------------------------------------

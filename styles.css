@@ -17,6 +17,7 @@ body {
 .exec-card {
     background: white;
     border: 1px solid rgba(255, 255, 255, 0.8);
+    border-left-width: 4px; /* Hardcode the left border width so inline styles can color it */
     border-radius: 1.5rem;
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
@@ -77,5 +78,5 @@ input:focus, select:focus {
 ::-webkit-scrollbar-thumb { background: var(--color-egyptian-earth); border-radius: 10px; }
 
 /* Table Row Highlights */
-.row-milestone { background: #FEF3E5; border-left: 4px solid var(--color-egyptian-earth); }
-.row-balloon { background: #F0FDF4; border-left: 4px solid var(--color-wasabi); }
+.row-milestone { background: #FEF3E5; border-left-color: var(--color-egyptian-earth); }
+.row-balloon { background: #F0FDF4; border-left-color: var(--color-wasabi); }
