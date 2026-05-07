@@ -1,3 +1,4 @@
+<!-- === File: ./index.html === -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -106,6 +107,19 @@
                             </label>
                         </div>
                     </div>
+
+                    <!-- Custom Balloon Payments Section -->
+                    <div class="space-y-3 pt-4 border-t border-slate-100">
+                        <div class="flex items-center justify-between">
+                            <label class="text-[10px] font-black text-slate-500 uppercase">Balloon Payments (Max 4)</label>
+                            <button type="button" id="btn-add-balloon" class="px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest text-white transition-colors" style="background: var(--color-emerald-green);">+ Add</button>
+                        </div>
+                        <div id="balloon-wrapper" class="space-y-2 mt-2">
+                            <!-- Dynamic balloon rows will be injected here -->
+                        </div>
+                        <p id="balloon-error" class="text-[10px] font-bold text-red-500 hidden mt-2"></p>
+                    </div>
+
                 </section>
             </div>
 
