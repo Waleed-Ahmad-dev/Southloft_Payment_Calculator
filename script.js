@@ -174,12 +174,33 @@ const formatExactDate = (date) => date.toLocaleDateString('en-GB', { day: '2-dig
 
 let balloonCount = 0;
 
+// ==========================================
+// RELIABLE NUMBER INPUT BINDING HELPER
+// Attaches native DOM listeners (more reliable
+// than jQuery for type="number" alongside Select2)
+// ==========================================
+function bindNumberInput(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input',  calculate);
+    el.addEventListener('change', calculate);
+    // Catches spinner arrow clicks in all browsers
+    el.addEventListener('keyup',  calculate);
+    el.addEventListener('mouseup', calculate);
+}
+
 $(document).ready(() => {
-    // 1. Bind all inputs and toggles to the calculation engine FIRST
+
+    // 1. Bind Select / Toggle controls via jQuery (these are fine)
     $('#unit-select, #plan-mode, #toggle-furnish, #toggle-pool').on('change', calculate);
-    $('#input-dp, #input-discount, #input-dld-fee, #input-admin-fee').on('input change', calculate);
-    
-    // Setup Custom Balloon Payments Logic
+
+    // 2. Bind all number inputs via NATIVE listeners — fixes the DP field not recalculating
+    bindNumberInput('input-dp');
+    bindNumberInput('input-discount');
+    bindNumberInput('input-dld-fee');
+    bindNumberInput('input-admin-fee');
+
+    // 3. Balloon payment add button
     $('#btn-add-balloon').on('click', () => {
         if (balloonCount >= 4) return;
         balloonCount++;
@@ -191,17 +212,19 @@ $(document).ready(() => {
                 <button type="button" class="remove-balloon p-3 text-red-500 font-bold hover:bg-red-50 rounded-xl transition-colors" onclick="$('#${rowId}').remove(); balloonCount--; calculate();">X</button>
             </div>
         `);
-        // Bind recalculate on user input
-        $(`#${rowId} input`).on('input change', calculate);
+        $(`#${rowId} input`).on('input change keyup', calculate);
     });
 
     $('#btn-pdf').on('click', generateProfessionalPDF);
 
-    // 2. Initialize filters (This will now correctly trigger a change and run calculate on load)
+    // 4. Initialize filters last — their internal trigger('change') will fire calculate()
     initFilters();
 });
 
-// Setup Dropdown Filters
+// ==========================================
+// 2. FILTER & UNIT DROPDOWN SETUP
+// ==========================================
+
 function initFilters() {
     const floors = [...new Set(INVENTORY.map(i => i.floor))].sort();
     const types  = [...new Set(INVENTORY.map(i => i.type))].sort();
@@ -212,20 +235,18 @@ function initFilters() {
     $('#filter-type').append('<option value="all">ALL TYPES</option>');
     types.forEach(t => $('#filter-type').append(`<option value="${t}">${t}</option>`));
 
-    // Removed the placeholder requirement so it auto-selects the first actual unit
     $('#unit-select').select2({ minimumResultsForSearch: 1 });
     updateUnitDropdown();
     $('#filter-floor, #filter-type').on('change', updateUnitDropdown);
 }
 
-// Update the Unit Select Dropdown based on chosen filters
 function updateUnitDropdown() {
     const floor = $('#filter-floor').val();
     const type  = $('#filter-type').val();
-    
-    $('#unit-select').empty(); // Clear out old list without appending a dead blank gap
+
+    $('#unit-select').empty();
     let count = 0;
-    
+
     INVENTORY.forEach(item => {
         const floorMatch = floor === 'all' || item.floor === floor;
         const typeMatch  = type  === 'all' || item.type  === type;
@@ -239,11 +260,13 @@ function updateUnitDropdown() {
         $('#unit-select').append(new Option("NO UNITS AVAILABLE", ""));
     }
 
-    // Force Select2 to update and trigger the calculation immediately
     $('#unit-select').trigger('change');
 }
 
-// Master Calculation Engine
+// ==========================================
+// 3. MASTER CALCULATION ENGINE
+// ==========================================
+
 function calculate() {
     const uId  = $('#unit-select').val();
     const unit = INVENTORY.find(i => i.u === uId);
@@ -254,10 +277,11 @@ function calculate() {
     }
 
     const plan = $('#plan-mode').val();
-    
-    // Core Base Logic
+
+    // Base price depends on plan type
     let baseTotal = (plan === 'standard') ? unit.reg : unit.post;
 
+    // Update unit spec display
     $('#unit-specs').css('opacity', '1');
     $('#spec-area').text(unit.area.toFixed(0));
     $('#spec-type').text(unit.type);
@@ -272,239 +296,214 @@ function calculate() {
         $('#toggle-pool').prop('checked', false);
     }
 
-    // Property Adjustments
+    // Apply furnish / pool adjustments
     let adjustedTotal = baseTotal;
     if (!isFurnished) adjustedTotal -= 25000;
     if (canHavePool && $('#toggle-pool').is(':checked')) adjustedTotal += 100000;
 
-    // Retrieve and Constrain Discount
+    // Discount
     let discPercent = parseFloat($('#input-discount').val()) || 0;
-    if (discPercent > 99) {
-        discPercent = 99;
-        $('#input-discount').val(99);
-    }
-
-    // Apply Discount
+    if (discPercent > 99) { discPercent = 99; $('#input-discount').val(99); }
     let netPrice = adjustedTotal * (1 - (discPercent / 100));
 
-    // Dynamic Downpayment Reader
-    let dpPercent = parseFloat($('#input-dp').val());
+    // --- READ DOWN PAYMENT FROM INPUT (the fix) ---
+    // Always read fresh from the DOM element to guarantee we get the latest typed value
+    const dpInputEl = document.getElementById('input-dp');
+    let dpPercent = parseFloat(dpInputEl.value);
     if (isNaN(dpPercent) || dpPercent < 0) dpPercent = 0;
-    
+    if (dpPercent > 100) { dpPercent = 100; dpInputEl.value = 100; }
+
     let dpAmt = netPrice * (dpPercent / 100);
 
-    // Custom Mandatory Fees Calculation
+    // Fees
     const dldFeePercent = parseFloat($('#input-dld-fee').val()) || 0;
-    const adminFee = parseFloat($('#input-admin-fee').val()) || 0;
-    const dldFee = netPrice * (dldFeePercent / 100);
+    const adminFee      = parseFloat($('#input-admin-fee').val()) || 0;
+    const dldFee        = netPrice * (dldFeePercent / 100);
 
-    const table = $('#schedule-body');
+    // Build schedule
+    const table   = $('#schedule-body');
     table.empty();
-    let schedule = [];
-
-    // Helper for dates
-    const today = new Date();
+    let schedule  = [];
+    const today   = new Date();
     const todayStr = addMonths(today, 0);
 
-    // Initial structure push
-    schedule.push({ monthOffset: 0, date: todayStr, desc: 'Downpayment', percent: dpPercent + '%', amt: dpAmt });
-    schedule.push({ monthOffset: 0, date: todayStr, desc: 'DLD fee', percent: dldFeePercent + '%', amt: dldFee });
-    schedule.push({ monthOffset: 0, date: todayStr, desc: 'Admin fee', percent: '-', amt: adminFee });
+    // Always-present upfront rows
+    schedule.push({ monthOffset: 0, date: todayStr, desc: 'Downpayment', percent: dpPercent.toFixed(1) + '%', amt: dpAmt });
+    schedule.push({ monthOffset: 0, date: todayStr, desc: 'DLD fee',     percent: dldFeePercent + '%',        amt: dldFee });
+    schedule.push({ monthOffset: 0, date: todayStr, desc: 'Admin fee',   percent: '-',                        amt: adminFee });
 
-    // Official Milestones with specific `installmentNum` trackers
-    // NOTE: Completion items are initially assigned a 'dummy' amount of 0. They are dynamically calculated below.
+    // Plan-specific installments
     if (plan === 'standard') {
         $('#badge-plan').text('STANDARD 60/40 PLAN');
-        schedule.push({ installmentNum: 1, monthOffset: 3, date: addMonths(today, 3), desc: '1st Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ installmentNum: 2, monthOffset: 6, date: addMonths(today, 6), desc: '2nd Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ installmentNum: 3, monthOffset: 9, date: addMonths(today, 9), desc: '3rd Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ installmentNum: 1, monthOffset: 3,  date: addMonths(today, 3),  desc: '1st Installment', percent: '5%',  amt: netPrice * 0.05 });
+        schedule.push({ installmentNum: 2, monthOffset: 6,  date: addMonths(today, 6),  desc: '2nd Installment', percent: '5%',  amt: netPrice * 0.05 });
+        schedule.push({ installmentNum: 3, monthOffset: 9,  date: addMonths(today, 9),  desc: '3rd Installment', percent: '5%',  amt: netPrice * 0.05 });
         schedule.push({ installmentNum: 4, monthOffset: 12, date: addMonths(today, 12), desc: '4th Installment', percent: '10%', amt: netPrice * 0.10 });
-        schedule.push({ installmentNum: 5, monthOffset: 15, date: addMonths(today, 15), desc: '5th Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ installmentNum: 6, monthOffset: 18, date: addMonths(today, 18), desc: '6th Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ installmentNum: 7, monthOffset: 21, date: addMonths(today, 21), desc: '7th Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ installmentNum: 5, monthOffset: 15, date: addMonths(today, 15), desc: '5th Installment', percent: '5%',  amt: netPrice * 0.05 });
+        schedule.push({ installmentNum: 6, monthOffset: 18, date: addMonths(today, 18), desc: '6th Installment', percent: '5%',  amt: netPrice * 0.05 });
+        schedule.push({ installmentNum: 7, monthOffset: 21, date: addMonths(today, 21), desc: '7th Installment', percent: '5%',  amt: netPrice * 0.05 });
         schedule.push({ monthOffset: 24, isCompletion: true, date: 'On completion', desc: 'Completion', percent: '0%', amt: 0 });
-        
+
     } else if (plan === '3yr') {
         $('#badge-plan').text('3-YEAR POST HANDOVER');
-        schedule.push({ installmentNum: 1, monthOffset: 5, date: addMonths(today, 5), desc: '1st Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ installmentNum: 2, monthOffset: 9, date: addMonths(today, 9), desc: '2nd Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ installmentNum: 1, monthOffset: 5,  date: addMonths(today, 5),  desc: '1st Installment', percent: '5%',  amt: netPrice * 0.05 });
+        schedule.push({ installmentNum: 2, monthOffset: 9,  date: addMonths(today, 9),  desc: '2nd Installment', percent: '5%',  amt: netPrice * 0.05 });
         schedule.push({ installmentNum: 3, monthOffset: 13, date: addMonths(today, 13), desc: '3rd Installment', percent: '10%', amt: netPrice * 0.10 });
-        schedule.push({ installmentNum: 4, monthOffset: 17, date: addMonths(today, 17), desc: '4th Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ installmentNum: 5, monthOffset: 21, date: addMonths(today, 21), desc: '5th Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ installmentNum: 4, monthOffset: 17, date: addMonths(today, 17), desc: '4th Installment', percent: '5%',  amt: netPrice * 0.05 });
+        schedule.push({ installmentNum: 5, monthOffset: 21, date: addMonths(today, 21), desc: '5th Installment', percent: '5%',  amt: netPrice * 0.05 });
         schedule.push({ installmentNum: 6, monthOffset: 24, isCompletion: true, date: 'On completion', desc: '6th Installment', percent: '0%', amt: 0 });
-        
-        // 3-Year Post Handover Schedule
-        const phMonths = [3, 6, 9, 12, 16, 18, 21, 24, 27, 30, 33, 36];
-        const phRates = [0.03, 0.03, 0.03, 0.05, 0.03, 0.03, 0.03, 0.05, 0.03, 0.03, 0.03, 0.03];
+
         const completionDate = new Date(today);
         completionDate.setMonth(completionDate.getMonth() + 24);
+        const phMonths = [3, 6, 9, 12, 16, 18, 21, 24, 27, 30, 33, 36];
+        const phRates  = [0.03, 0.03, 0.03, 0.05, 0.03, 0.03, 0.03, 0.05, 0.03, 0.03, 0.03, 0.03];
         phMonths.forEach((m, idx) => {
-            schedule.push({ 
+            schedule.push({
                 installmentNum: idx + 7,
-                monthOffset: 24 + m, 
-                date: formatExactDate(new Date(completionDate.getFullYear(), completionDate.getMonth() + m, completionDate.getDate())), 
-                desc: `${idx + 7}th Installment`, 
-                percent: `${(phRates[idx]*100).toFixed(0)}%`, 
-                amt: netPrice * phRates[idx] 
+                monthOffset: 24 + m,
+                date: formatExactDate(new Date(completionDate.getFullYear(), completionDate.getMonth() + m, completionDate.getDate())),
+                desc: `${idx + 7}th Installment`,
+                percent: `${(phRates[idx] * 100).toFixed(0)}%`,
+                amt: netPrice * phRates[idx]
             });
         });
 
     } else if (plan === '5yr') {
         $('#badge-plan').text('5-YEAR POST HANDOVER');
-        schedule.push({ installmentNum: 1, monthOffset: 5, date: addMonths(today, 5), desc: '1st Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ installmentNum: 2, monthOffset: 9, date: addMonths(today, 9), desc: '2nd Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ installmentNum: 1, monthOffset: 5,  date: addMonths(today, 5),  desc: '1st Installment', percent: '5%',  amt: netPrice * 0.05 });
+        schedule.push({ installmentNum: 2, monthOffset: 9,  date: addMonths(today, 9),  desc: '2nd Installment', percent: '5%',  amt: netPrice * 0.05 });
         schedule.push({ installmentNum: 3, monthOffset: 13, date: addMonths(today, 13), desc: '3rd Installment', percent: '10%', amt: netPrice * 0.10 });
-        schedule.push({ installmentNum: 4, monthOffset: 17, date: addMonths(today, 17), desc: '4th Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ installmentNum: 5, monthOffset: 21, date: addMonths(today, 21), desc: '5th Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ installmentNum: 4, monthOffset: 17, date: addMonths(today, 17), desc: '4th Installment', percent: '5%',  amt: netPrice * 0.05 });
+        schedule.push({ installmentNum: 5, monthOffset: 21, date: addMonths(today, 21), desc: '5th Installment', percent: '5%',  amt: netPrice * 0.05 });
         schedule.push({ installmentNum: 6, monthOffset: 24, isCompletion: true, date: 'On completion', desc: '6th Installment', percent: '0%', amt: 0 });
-        
-        // 5-Year Post Handover Schedule
+
         const completionDate = new Date(today);
         completionDate.setMonth(completionDate.getMonth() + 24);
         for (let i = 1; i <= 10; i++) {
-            schedule.push({ 
+            schedule.push({
                 installmentNum: i + 6,
-                monthOffset: 24 + (i * 6), 
-                date: formatExactDate(new Date(completionDate.getFullYear(), completionDate.getMonth() + (i * 6), completionDate.getDate())), 
-                desc: `${i + 6}th Installment`, 
-                percent: '4%', 
-                amt: netPrice * 0.04 
+                monthOffset: 24 + (i * 6),
+                date: formatExactDate(new Date(completionDate.getFullYear(), completionDate.getMonth() + (i * 6), completionDate.getDate())),
+                desc: `${i + 6}th Installment`,
+                percent: '4%',
+                amt: netPrice * 0.04
             });
         }
     }
 
-    // -----------------------------------------------------
-    // DYNAMIC BALANCE & MATH SAFETIES
-    // -----------------------------------------------------
+    // -----------------------------------------------
+    // DYNAMIC BALANCE: calculate Completion remainder
+    // -----------------------------------------------
     let completionItem = schedule.find(s => s.isCompletion);
-    $('#balloon-error').addClass('hidden'); // reset warning state
-    
+    $('#balloon-error').addClass('hidden');
+
     if (completionItem) {
-        // Sum everything that reduces the principal balance
+        // Sum all property payments EXCEPT the completion row and fee rows
         let totalPropertyPayments = schedule.reduce((sum, s) => {
             if (s.isCompletion || s.desc === 'DLD fee' || s.desc === 'Admin fee') return sum;
-            return sum + s.amt; // Includes Downpayment and all Fixed Milestones
+            return sum + s.amt;
         }, 0);
 
         let remainingBalance = netPrice - totalPropertyPayments;
 
-        // Constraint: If the user inputs a DP% that mathematically drains the balance into the negative
+        // Safety cap: DP cannot overdrain the balance
         if (remainingBalance < 0) {
-            const excess = Math.abs(remainingBalance);
-            dpAmt -= excess;
-            dpPercent = (dpAmt / netPrice) * 100;
-            
-            // Force the UI and the DP object to correct themselves
-            $('#input-dp').val(dpPercent.toFixed(1)); 
-            const dpItem = schedule.find(s => s.desc === 'Downpayment');
-            dpItem.amt = dpAmt;
-            dpItem.percent = dpPercent.toFixed(1) + '%';
-            
+            const excess   = Math.abs(remainingBalance);
+            dpAmt         -= excess;
+            dpPercent      = (dpAmt / netPrice) * 100;
+
+            dpInputEl.value = dpPercent.toFixed(1);
+            const dpItem    = schedule.find(s => s.desc === 'Downpayment');
+            dpItem.amt      = dpAmt;
+            dpItem.percent  = dpPercent.toFixed(1) + '%';
             remainingBalance = 0;
-            $('#balloon-error').text(`Notice: Downpayment was automatically capped at ${dpPercent.toFixed(1)}% to balance fixed installments.`).removeClass('hidden text-red-500').addClass('text-orange-500');
+
+            $('#balloon-error')
+                .text(`Notice: Downpayment was automatically capped at ${dpPercent.toFixed(1)}% to balance fixed installments.`)
+                .removeClass('hidden text-red-500')
+                .addClass('text-orange-500');
         } else {
             $('#balloon-error').addClass('text-red-500').removeClass('text-orange-500');
         }
 
-        // Float precision fix
         if (remainingBalance < 1 && remainingBalance > -1) remainingBalance = 0;
-        
-        // Assign remainder dynamically to completion
-        completionItem.amt = remainingBalance;
+
+        completionItem.amt     = remainingBalance;
         completionItem.percent = ((remainingBalance / netPrice) * 100).toFixed(1) + '%';
     }
 
-    // -----------------------------------------------------
-    // INTEGRATION: Parse and Validate Balloon Payments
-    // -----------------------------------------------------
-    let balloons = [];
+    // -----------------------------------------------
+    // BALLOON PAYMENTS
+    // -----------------------------------------------
+    let balloons      = [];
     let totalBalloonAmt = 0;
-    let invalidInsts = [];
+    let invalidInsts  = [];
 
-    $('.balloon-entry').each(function() {
+    $('.balloon-entry').each(function () {
         const instNum = parseInt($(this).find('.balloon-inst').val());
-        const a = parseFloat($(this).find('.balloon-amount').val());
+        const a       = parseFloat($(this).find('.balloon-amount').val());
         if (!isNaN(instNum) && !isNaN(a) && instNum > 0 && a > 0) {
-            // Check if user requested a valid installment number
             const target = schedule.find(s => s.installmentNum === instNum);
             if (!target) {
                 invalidInsts.push(instNum);
             } else {
-                balloons.push({ instNum: instNum, amount: a });
+                balloons.push({ instNum, amount: a });
                 totalBalloonAmt += a;
             }
         }
     });
 
     if (invalidInsts.length > 0) {
-        // Warn the user that the installment number doesn't exist for this plan structure
         $('#balloon-error').text(`Error: Installment number(s) ${invalidInsts.join(', ')} do not exist in this plan.`).removeClass('hidden');
-    } else if (balloons.length > 0) {
-        // Ensure balloons don't exceed the dynamically calculated Completion balance
-        if (completionItem) {
-            if (totalBalloonAmt > completionItem.amt) {
-                // Show Error and DO NOT inject balloons into the schedule
-                $('#balloon-error').text(`Error: Total balloon payments exceed available Completion balance (${formatter.format(completionItem.amt)}).`).removeClass('hidden text-orange-500').addClass('text-red-500');
-            } else {
-                // Clean state, proceed with injection
-                if (!$('#balloon-error').hasClass('text-orange-500')) {
-                    $('#balloon-error').addClass('hidden');
+    } else if (balloons.length > 0 && completionItem) {
+        if (totalBalloonAmt > completionItem.amt) {
+            $('#balloon-error')
+                .text(`Error: Total balloon payments exceed available Completion balance (${formatter.format(completionItem.amt)}).`)
+                .removeClass('hidden text-orange-500')
+                .addClass('text-red-500');
+        } else {
+            if (!$('#balloon-error').hasClass('text-orange-500')) $('#balloon-error').addClass('hidden');
+
+            completionItem.amt    -= totalBalloonAmt;
+            completionItem.percent = ((completionItem.amt / netPrice) * 100).toFixed(1) + '%';
+
+            balloons.forEach(b => {
+                let existing = schedule.find(s => s.installmentNum === b.instNum);
+                if (existing) {
+                    let shortDesc = existing.desc.replace('Installment', 'Inst.');
+                    if (!shortDesc.includes('Balloon')) existing.desc = `Balloon + ${shortDesc}`;
+                    existing.amt    += b.amount;
+                    existing.percent = ((existing.amt / netPrice) * 100).toFixed(1) + '%';
                 }
-                
-                // 1. Deduct total balloons from Completion
-                completionItem.amt -= totalBalloonAmt;
-                completionItem.percent = ((completionItem.amt / netPrice) * 100).toFixed(1) + '%';
+            });
 
-                // 2. Inject Balloon Items into the corresponding Installment
-                balloons.forEach(b => {
-                    let existing = schedule.find(s => s.installmentNum === b.instNum);
-                    
-                    if (existing) {
-                        // Keep descriptions concise to prevent PDF overlap 
-                        let shortDesc = existing.desc.replace('Installment', 'Inst.');
-                        if (!shortDesc.includes('Balloon')) {
-                            existing.desc = `Balloon + ${shortDesc}`;
-                        }
-                        
-                        existing.amt += b.amount;
-                        existing.percent = ((existing.amt / netPrice) * 100).toFixed(1) + '%';
-                    }
-                });
-
-                // Sort Chronologically is kept just in case, but structure won't break because we merged logic
-                schedule.forEach((item, index) => item.originalIndex = index);
-                schedule.sort((a, b) => {
-                    if (a.monthOffset === b.monthOffset) {
-                        return a.originalIndex - b.originalIndex;
-                    }
-                    return a.monthOffset - b.monthOffset;
-                });
-            }
+            schedule.forEach((item, index) => item.originalIndex = index);
+            schedule.sort((a, b) => a.monthOffset !== b.monthOffset ? a.monthOffset - b.monthOffset : a.originalIndex - b.originalIndex);
         }
     }
 
-    // Write to DOM
+    // -----------------------------------------------
+    // RENDER TABLE
+    // -----------------------------------------------
     let rowsHTML = '';
     schedule.forEach((row, idx) => {
-        const percentStr = row.percent !== '-' ? ` (${row.percent})` : '';
-        const isUpfront = idx < 3;
+        const percentStr   = row.percent !== '-' ? ` (${row.percent})` : '';
+        const isUpfront    = idx < 3;
         const isBalloonHighlight = row.desc.includes('Balloon');
-        
-        // Define Custom Styling Logic
-        let rowClass = 'row-milestone';
-        let amtColor = 'var(--color-egyptian-earth)';
+
+        let rowClass  = 'row-milestone';
+        let amtColor  = 'var(--color-egyptian-earth)';
         let descColor = 'var(--color-egyptian-earth)';
-        
+
         if (isUpfront) {
-            rowClass = 'row-balloon';
-            amtColor = 'var(--color-emerald-green)';
+            rowClass  = 'row-balloon';
+            amtColor  = 'var(--color-emerald-green)';
             descColor = '#64748B';
         } else if (isBalloonHighlight) {
-            // Give custom balloon rows a subtle visual distinction
-            amtColor = 'var(--color-emerald-green)';
+            amtColor  = 'var(--color-emerald-green)';
             descColor = 'var(--color-emerald-green)';
         }
-        
+
         rowsHTML += `
             <tr class="${rowClass}" style="color: var(--color-nor-de-vigne);">
                 <td class="p-4 uppercase text-[10px] font-black">${row.date}</td>
@@ -515,12 +514,12 @@ function calculate() {
     });
     table.html(rowsHTML);
 
-    // Update Summary Cards
+    // Update dashboard cards
     $('#dash-net').text(formatter.format(netPrice));
     $('#dash-dp').text(formatter.format(dpAmt));
     $('#dash-fees').text(formatter.format(dldFee + adminFee));
 
-    // Export payload for PDF logic
+    // Export payload for PDF
     window.currentExportData = {
         netPrice, unit, plan, schedule,
         furnished: isFurnished,
@@ -531,15 +530,15 @@ function calculate() {
 
 
 // ==========================================
-// 3. PDF ENGINE 
+// 4. PDF ENGINE
 // ==========================================
 
 function loadImage(url) {
     return new Promise((resolve) => {
-        const img = new Image();
-        img.onload  = () => resolve(img);
-        img.onerror = () => { console.warn(`Failed to load: ${url}`); resolve(null); };
-        img.src = url;
+        const img    = new Image();
+        img.onload   = () => resolve(img);
+        img.onerror  = () => { console.warn(`Failed to load: ${url}`); resolve(null); };
+        img.src      = url;
     });
 }
 
@@ -557,7 +556,6 @@ async function generateProfessionalPDF() {
 
     const basePath = 'assets/';
 
-    // Load all images in parallel 
     const [imgTitle, imgMap, imgRender, imgSubtitle, imgThankYou] = await Promise.all([
         loadImage(basePath + 'Title.jpg'),
         loadImage(basePath + 'Map.jpg'),
@@ -573,24 +571,24 @@ async function generateProfessionalPDF() {
         doc.setFillColor(13, 54, 45);
         doc.rect(0, 0, pageW, pageH, 'F');
     }
-    
-    const unitTextX = pageW * 0.62;  
-    const unitTextY = pageH * 0.60;  
+
+    const unitTextX = pageW * 0.62;
+    const unitTextY = pageH * 0.60;
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(13);
     doc.setFont('helvetica', 'normal');
-    doc.setCharSpace(4);   
+    doc.setCharSpace(4);
     doc.text(`UNIT ${data.unit.u}`, unitTextX, unitTextY);
-    doc.setCharSpace(0);   
+    doc.setCharSpace(0);
 
     // -- PAGE 2: MAP --
     doc.addPage();
     if (imgMap) {
         doc.addImage(imgMap, 'JPEG', 0, 0, pageW, pageH);
     } else {
-        doc.setFillColor(220,220,220); doc.rect(0,0,pageW,pageH,'F');
-        doc.setTextColor(100,100,100); doc.setFontSize(18);
-        doc.text('Map.jpg missing — place in assets/', pageW/2, pageH/2, {align:'center'});
+        doc.setFillColor(220, 220, 220); doc.rect(0, 0, pageW, pageH, 'F');
+        doc.setTextColor(100, 100, 100); doc.setFontSize(18);
+        doc.text('Map.jpg missing — place in assets/', pageW / 2, pageH / 2, { align: 'center' });
     }
 
     // -- PAGE 3: RENDER --
@@ -598,9 +596,9 @@ async function generateProfessionalPDF() {
     if (imgRender) {
         doc.addImage(imgRender, 'JPEG', 0, 0, pageW, pageH);
     } else {
-        doc.setFillColor(220,220,220); doc.rect(0,0,pageW,pageH,'F');
-        doc.setTextColor(100,100,100); doc.setFontSize(18);
-        doc.text('Render.jpg missing — place in assets/', pageW/2, pageH/2, {align:'center'});
+        doc.setFillColor(220, 220, 220); doc.rect(0, 0, pageW, pageH, 'F');
+        doc.setTextColor(100, 100, 100); doc.setFontSize(18);
+        doc.text('Render.jpg missing — place in assets/', pageW / 2, pageH / 2, { align: 'center' });
     }
 
     // -- PAGE 4: UNIT SPECIFICATIONS --
@@ -638,16 +636,16 @@ async function generateProfessionalPDF() {
     doc.setCharSpace(0);
 
     const specRows = [
-        ['FLOOR NO.',    `${data.unit.floor}`],
-        ['UNIT TYPE',    data.unit.type],
-        ['TOTAL AREA',   `${data.unit.area.toFixed(2)} SQFT`],
+        ['FLOOR NO.',      `${data.unit.floor}`],
+        ['UNIT TYPE',      data.unit.type],
+        ['TOTAL AREA',     `${data.unit.area.toFixed(2)} SQFT`],
         ['PURCHASE PRICE', formatter.format(data.netPrice)],
-        ['DOWNPAYMENT',  `${data.dpPercent}%`],
-        ['FURNISHING',   data.furnished ? 'FULLY FURNISHED' : 'UNFURNISHED'],
-        ['PRIVATE POOL', data.pool      ? 'INCLUDED'        : 'NOT INCLUDED'],
+        ['DOWNPAYMENT',    `${parseFloat(data.dpPercent).toFixed(1)}% (${formatter.format(data.dpAmt)})`],
+        ['FURNISHING',     data.furnished ? 'FULLY FURNISHED' : 'UNFURNISHED'],
+        ['PRIVATE POOL',   data.pool      ? 'INCLUDED'        : 'NOT INCLUDED'],
     ];
 
-    let specY  = 78;
+    let specY     = 78;
     const rowGap  = 15;
     const labelX  = 18;
     const valueX  = 110;
@@ -679,12 +677,12 @@ async function generateProfessionalPDF() {
     doc.setFillColor(...darkGreen);
     doc.rect(0, 0, pageW, pageH, 'F');
 
-    const ML = 16;   
-    const MR = 16;   
+    const ML = 16;
+    const MR = 16;
 
     let planLabel = 'STANDARD 60/40 PAYMENT PLAN';
-    if(data.plan === '3yr') planLabel = '3-YEAR POST HANDOVER PLAN';
-    if(data.plan === '5yr') planLabel = '5-YEAR POST HANDOVER PLAN';
+    if (data.plan === '3yr') planLabel = '3-YEAR POST HANDOVER PLAN';
+    if (data.plan === '5yr') planLabel = '5-YEAR POST HANDOVER PLAN';
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
@@ -703,40 +701,33 @@ async function generateProfessionalPDF() {
     doc.setLineWidth(0.3);
     doc.line(ML, 22, pageW - MR, 22);
 
-    // Determine if we need to split into 2 columns (if schedule array is large)
     const renderTwoColumns = data.schedule.length > 15;
     const colHeaderY = 30;
 
-    // Helper to draw columns with updated widths and alignments
     const drawColHeaders = (offsetX) => {
         const C = [
-            { label: 'TIMELINE',    x: offsetX,       align: 'left' },
-            { label: 'DESCRIPTION', x: offsetX + 28,  align: 'left' },
+            { label: 'TIMELINE',    x: offsetX,       align: 'left'  },
+            { label: 'DESCRIPTION', x: offsetX + 28,  align: 'left'  },
             { label: '%',           x: offsetX + 105, align: 'right' },
             { label: 'AMOUNT',      x: offsetX + 130, align: 'right' }
         ];
-        
+
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7);
         doc.setTextColor(...lightGreen);
         doc.setCharSpace(0);
-        
-        C.forEach(c => {
-            doc.text(c.label, c.x, colHeaderY, { align: c.align });
-        });
+        C.forEach(c => doc.text(c.label, c.x, colHeaderY, { align: c.align }));
 
         doc.setDrawColor(255, 255, 255);
         doc.setGState(new doc.GState({ opacity: 0.15 }));
-        // Draw line underneath header
         doc.line(offsetX, colHeaderY + 3, offsetX + 130, colHeaderY + 3);
         doc.setGState(new doc.GState({ opacity: 1 }));
-        
         return C;
     };
 
     const drawScheduleBlock = (scheduleSubset, C, startY) => {
-        const lineH = 7.5;  
-        let rowY = startY;
+        const lineH = 7.5;
+        let rowY    = startY;
 
         scheduleSubset.forEach((row) => {
             doc.setDrawColor(255, 255, 255);
@@ -746,15 +737,13 @@ async function generateProfessionalPDF() {
 
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(7.5);
-            
-            // Draw Data Left Aligned
+
             doc.setTextColor(...dimWhite);
             doc.text(row.date, C[0].x, rowY + 5, { align: C[0].align });
-            
+
             doc.setTextColor(...offWhite);
             doc.text(row.desc.toUpperCase(), C[1].x, rowY + 5, { align: C[1].align });
-            
-            // Draw Data Right Aligned
+
             doc.text(row.percent, C[2].x, rowY + 5, { align: C[2].align });
             const cleanAmt = formatter.format(row.amt).replace('AED', '').trim();
             doc.text(cleanAmt, C[3].x, rowY + 5, { align: C[3].align });
@@ -764,26 +753,22 @@ async function generateProfessionalPDF() {
     };
 
     if (renderTwoColumns) {
-        const mid = Math.ceil(data.schedule.length / 2);
+        const mid      = Math.ceil(data.schedule.length / 2);
         const col1Data = data.schedule.slice(0, mid);
         const col2Data = data.schedule.slice(mid);
 
-        // Draw Left
-        const CLeft = drawColHeaders(ML);
+        const CLeft  = drawColHeaders(ML);
         drawScheduleBlock(col1Data, CLeft, colHeaderY + 5);
 
-        // Draw Right
         const rightOffset = pageW / 2 + 5;
-        const CRight = drawColHeaders(rightOffset);
+        const CRight      = drawColHeaders(rightOffset);
         drawScheduleBlock(col2Data, CRight, colHeaderY + 5);
-
     } else {
-        // Just one wide center/left column
         const C = drawColHeaders(ML);
         drawScheduleBlock(data.schedule, C, colHeaderY + 5);
     }
 
-    // Bank details at the bottom of Page 5
+    // Bank details
     const bankSectionTop = pageH - 45;
     doc.setDrawColor(...lightGreen);
     doc.setLineWidth(0.3);
@@ -795,8 +780,6 @@ async function generateProfessionalPDF() {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.5);
     doc.setTextColor(...offWhite);
-    
-    // Dynamic bank instruction text based on custom DLD fee
     doc.text('BOOKING AND INSTALLMENT PAYMENTS', colB1, bankSectionTop + 6);
     doc.text(`FOR ${data.dldPercent}% DLD AND ADMIN FEE`, colB2, bankSectionTop + 6);
 
@@ -837,17 +820,17 @@ async function generateProfessionalPDF() {
     if (imgSubtitle) {
         doc.addImage(imgSubtitle, 'JPEG', 0, 0, pageW, pageH);
     } else {
-        doc.setFillColor(61,57,53); doc.rect(0,0,pageW,pageH,'F');
-        doc.setTextColor(255,255,255); doc.setFontSize(18);
-        doc.text('Subtitle.jpg missing — place in assets/', pageW/2, pageH/2, {align:'center'});
+        doc.setFillColor(61, 57, 53); doc.rect(0, 0, pageW, pageH, 'F');
+        doc.setTextColor(255, 255, 255); doc.setFontSize(18);
+        doc.text('Subtitle.jpg missing — place in assets/', pageW / 2, pageH / 2, { align: 'center' });
     }
 
-    // -- PAGE 7: PLAIN TITLE PAGE --
+    // -- PAGE 7: THANK YOU --
     doc.addPage();
     if (imgThankYou) {
         doc.addImage(imgThankYou, 'JPEG', 0, 0, pageW, pageH);
     } else {
-        doc.setFillColor(13,54,45); doc.rect(0,0,pageW,pageH,'F');
+        doc.setFillColor(13, 54, 45); doc.rect(0, 0, pageW, pageH, 'F');
     }
 
     doc.save(`SouthLofts_Unit_${data.unit.u}_Proposal.pdf`);
