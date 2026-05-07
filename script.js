@@ -175,9 +175,7 @@ const formatExactDate = (date) => date.toLocaleDateString('en-GB', { day: '2-dig
 let balloonCount = 0;
 
 $(document).ready(() => {
-    initFilters();
-    
-    // Bind all inputs and toggles to the calculation engine
+    // 1. Bind all inputs and toggles to the calculation engine FIRST
     $('#unit-select, #plan-mode, #toggle-furnish, #toggle-pool').on('change', calculate);
     $('#input-dp, #input-discount, #input-dld-fee, #input-admin-fee').on('input change', calculate);
     
@@ -198,7 +196,9 @@ $(document).ready(() => {
     });
 
     $('#btn-pdf').on('click', generateProfessionalPDF);
-    calculate();
+
+    // 2. Initialize filters (This will now correctly trigger a change and run calculate on load)
+    initFilters();
 });
 
 // Setup Dropdown Filters
@@ -212,7 +212,8 @@ function initFilters() {
     $('#filter-type').append('<option value="all">ALL TYPES</option>');
     types.forEach(t => $('#filter-type').append(`<option value="${t}">${t}</option>`));
 
-    $('#unit-select').select2({ placeholder: "SEARCH UNIT ID...", minimumResultsForSearch: 1 });
+    // Removed the placeholder requirement so it auto-selects the first actual unit
+    $('#unit-select').select2({ minimumResultsForSearch: 1 });
     updateUnitDropdown();
     $('#filter-floor, #filter-type').on('change', updateUnitDropdown);
 }
@@ -221,14 +222,24 @@ function initFilters() {
 function updateUnitDropdown() {
     const floor = $('#filter-floor').val();
     const type  = $('#filter-type').val();
-    $('#unit-select').empty().append(new Option("", "", true, true));
+    
+    $('#unit-select').empty(); // Clear out old list without appending a dead blank gap
+    let count = 0;
+    
     INVENTORY.forEach(item => {
         const floorMatch = floor === 'all' || item.floor === floor;
         const typeMatch  = type  === 'all' || item.type  === type;
         if (floorMatch && typeMatch) {
             $('#unit-select').append(new Option(`UNIT ${item.u} • ${item.type} • ${item.area} sqft`, item.u));
+            count++;
         }
     });
+
+    if (count === 0) {
+        $('#unit-select').append(new Option("NO UNITS AVAILABLE", ""));
+    }
+
+    // Force Select2 to update and trigger the calculation immediately
     $('#unit-select').trigger('change');
 }
 
