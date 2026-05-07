@@ -1,3 +1,5 @@
+// === File: ./script.js ===
+
 // ==========================================
 // 1. MASTER INVENTORY DATABASE
 // ==========================================
@@ -162,7 +164,7 @@ const INVENTORY = [
 // Formatter for AED
 const formatter = new Intl.NumberFormat('en-AE', { style: 'currency', currency: 'AED', maximumFractionDigits: 0 });
 
-// Global Date Helpers from Version 1
+// Global Date Helpers
 const addMonths = (date, months) => {
     const d = new Date(date);
     d.setMonth(d.getMonth() + months);
@@ -172,13 +174,30 @@ const addMonths = (date, months) => {
 
 const formatExactDate = (date) => date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
+let balloonCount = 0;
 
 $(document).ready(() => {
     initFilters();
-    // Instant calculations bound directly to input/change without debounce (as requested)
+    // Instant calculations bound directly to input/change without debounce
     $('#unit-select, #plan-mode, #toggle-furnish, #toggle-pool').on('change', calculate);
     $('#input-discount').on('input change', calculate);
     
+    // Setup Custom Balloon Payments Logic
+    $('#btn-add-balloon').on('click', () => {
+        if (balloonCount >= 4) return;
+        balloonCount++;
+        const rowId = `balloon-row-${Date.now()}`;
+        $('#balloon-wrapper').append(`
+            <div id="${rowId}" class="flex gap-2 items-center balloon-entry mt-2">
+                <input type="number" min="1" step="1" class="balloon-month w-1/3 p-3 rounded-xl text-xs font-bold border border-slate-200" placeholder="Month (e.g. 6)">
+                <input type="number" min="0" step="1000" class="balloon-amount w-full p-3 rounded-xl text-xs font-bold border border-slate-200" placeholder="Amount (AED)">
+                <button type="button" class="remove-balloon p-3 text-red-500 font-bold hover:bg-red-50 rounded-xl transition-colors" onclick="$('#${rowId}').remove(); balloonCount--; calculate();">X</button>
+            </div>
+        `);
+        // Bind recalculate on user input
+        $(`#${rowId} input`).on('input change', calculate);
+    });
+
     $('#btn-pdf').on('click', generateProfessionalPDF);
     calculate();
 });
@@ -265,31 +284,31 @@ function calculate() {
     const today = new Date();
     const todayStr = addMonths(today, 0);
 
-    // Upfront Details (All Plans)
-    schedule.push({ date: todayStr, desc: 'Downpayment', percent: '20%', amt: dpAmt });
-    schedule.push({ date: todayStr, desc: 'DLD fee', percent: '4%', amt: dldFee });
-    schedule.push({ date: todayStr, desc: 'Admin fee', percent: '-', amt: adminFee });
+    // Initial structure push (utilizing monthOffsets to keep structure logical)
+    schedule.push({ monthOffset: 0, date: todayStr, desc: 'Downpayment', percent: '20%', amt: dpAmt });
+    schedule.push({ monthOffset: 0, date: todayStr, desc: 'DLD fee', percent: '4%', amt: dldFee });
+    schedule.push({ monthOffset: 0, date: todayStr, desc: 'Admin fee', percent: '-', amt: adminFee });
 
-    // Official V1 Plan Milestones 
+    // Official Milestones 
     if (plan === 'standard') {
         $('#badge-plan').text('STANDARD 60/40 PLAN');
-        schedule.push({ date: addMonths(today, 3), desc: '1st Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ date: addMonths(today, 6), desc: '2nd Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ date: addMonths(today, 9), desc: '3rd Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ date: addMonths(today, 12), desc: '4th Installment', percent: '10%', amt: netPrice * 0.10 });
-        schedule.push({ date: addMonths(today, 15), desc: '5th Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ date: addMonths(today, 18), desc: '6th Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ date: addMonths(today, 21), desc: '7th Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ date: 'On completion', desc: 'Completion', percent: '40%', amt: netPrice * 0.40 });
+        schedule.push({ monthOffset: 3, date: addMonths(today, 3), desc: '1st Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ monthOffset: 6, date: addMonths(today, 6), desc: '2nd Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ monthOffset: 9, date: addMonths(today, 9), desc: '3rd Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ monthOffset: 12, date: addMonths(today, 12), desc: '4th Installment', percent: '10%', amt: netPrice * 0.10 });
+        schedule.push({ monthOffset: 15, date: addMonths(today, 15), desc: '5th Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ monthOffset: 18, date: addMonths(today, 18), desc: '6th Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ monthOffset: 21, date: addMonths(today, 21), desc: '7th Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ monthOffset: 24, isCompletion: true, date: 'On completion', desc: 'Completion', percent: '40%', amt: netPrice * 0.40 });
         
     } else if (plan === '3yr') {
         $('#badge-plan').text('3-YEAR POST HANDOVER');
-        schedule.push({ date: addMonths(today, 5), desc: '1st Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ date: addMonths(today, 9), desc: '2nd Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ date: addMonths(today, 13), desc: '3rd Installment', percent: '10%', amt: netPrice * 0.10 });
-        schedule.push({ date: addMonths(today, 17), desc: '4th Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ date: addMonths(today, 21), desc: '5th Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ date: 'On completion', desc: '6th Installment', percent: '10%', amt: netPrice * 0.10 });
+        schedule.push({ monthOffset: 5, date: addMonths(today, 5), desc: '1st Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ monthOffset: 9, date: addMonths(today, 9), desc: '2nd Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ monthOffset: 13, date: addMonths(today, 13), desc: '3rd Installment', percent: '10%', amt: netPrice * 0.10 });
+        schedule.push({ monthOffset: 17, date: addMonths(today, 17), desc: '4th Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ monthOffset: 21, date: addMonths(today, 21), desc: '5th Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ monthOffset: 24, isCompletion: true, date: 'On completion', desc: '6th Installment', percent: '10%', amt: netPrice * 0.10 });
         
         // 3-Year Post Handover Schedule
         const phMonths = [3, 6, 9, 12, 16, 18, 21, 24, 27, 30, 33, 36];
@@ -297,24 +316,103 @@ function calculate() {
         const completionDate = new Date(today);
         completionDate.setMonth(completionDate.getMonth() + 24);
         phMonths.forEach((m, idx) => {
-            schedule.push({ date: formatExactDate(new Date(completionDate.getFullYear(), completionDate.getMonth() + m, completionDate.getDate())), desc: `${idx + 7}th Installment`, percent: `${(phRates[idx]*100).toFixed(0)}%`, amt: netPrice * phRates[idx] });
+            schedule.push({ 
+                monthOffset: 24 + m, 
+                date: formatExactDate(new Date(completionDate.getFullYear(), completionDate.getMonth() + m, completionDate.getDate())), 
+                desc: `${idx + 7}th Installment`, 
+                percent: `${(phRates[idx]*100).toFixed(0)}%`, 
+                amt: netPrice * phRates[idx] 
+            });
         });
 
     } else if (plan === '5yr') {
         $('#badge-plan').text('5-YEAR POST HANDOVER');
-        schedule.push({ date: addMonths(today, 5), desc: '1st Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ date: addMonths(today, 9), desc: '2nd Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ date: addMonths(today, 13), desc: '3rd Installment', percent: '10%', amt: netPrice * 0.10 });
-        schedule.push({ date: addMonths(today, 17), desc: '4th Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ date: addMonths(today, 21), desc: '5th Installment', percent: '5%', amt: netPrice * 0.05 });
-        schedule.push({ date: 'On completion', desc: '6th Installment', percent: '10%', amt: netPrice * 0.10 });
+        schedule.push({ monthOffset: 5, date: addMonths(today, 5), desc: '1st Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ monthOffset: 9, date: addMonths(today, 9), desc: '2nd Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ monthOffset: 13, date: addMonths(today, 13), desc: '3rd Installment', percent: '10%', amt: netPrice * 0.10 });
+        schedule.push({ monthOffset: 17, date: addMonths(today, 17), desc: '4th Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ monthOffset: 21, date: addMonths(today, 21), desc: '5th Installment', percent: '5%', amt: netPrice * 0.05 });
+        schedule.push({ monthOffset: 24, isCompletion: true, date: 'On completion', desc: '6th Installment', percent: '10%', amt: netPrice * 0.10 });
         
         // 5-Year Post Handover Schedule
         const completionDate = new Date(today);
         completionDate.setMonth(completionDate.getMonth() + 24);
         for (let i = 1; i <= 10; i++) {
-            schedule.push({ date: formatExactDate(new Date(completionDate.getFullYear(), completionDate.getMonth() + (i * 6), completionDate.getDate())), desc: `${i + 6}th Installment`, percent: '4%', amt: netPrice * 0.04 });
+            schedule.push({ 
+                monthOffset: 24 + (i * 6), 
+                date: formatExactDate(new Date(completionDate.getFullYear(), completionDate.getMonth() + (i * 6), completionDate.getDate())), 
+                desc: `${i + 6}th Installment`, 
+                percent: '4%', 
+                amt: netPrice * 0.04 
+            });
         }
+    }
+
+    // -----------------------------------------------------
+    // INTEGRATION: Parse and Validate Balloon Payments
+    // -----------------------------------------------------
+    let balloons = [];
+    let totalBalloonAmt = 0;
+
+    $('.balloon-entry').each(function() {
+        const m = parseInt($(this).find('.balloon-month').val());
+        const a = parseFloat($(this).find('.balloon-amount').val());
+        if (!isNaN(m) && !isNaN(a) && m > 0 && a > 0) {
+            balloons.push({ month: m, amount: a });
+            totalBalloonAmt += a;
+        }
+    });
+
+    if (balloons.length > 0) {
+        // Ensure balloons don't exceed the final Completion lump sum
+        let completionItem = schedule.find(s => s.isCompletion);
+        
+        if (completionItem) {
+            if (totalBalloonAmt > completionItem.amt) {
+                // Show Error and DO NOT inject balloons into the schedule
+                $('#balloon-error').text(`Error: Total balloon payments exceed available Completion balance (${formatter.format(completionItem.amt)}).`).removeClass('hidden');
+            } else {
+                // Clean state, proceed with injection
+                $('#balloon-error').addClass('hidden');
+                
+                // 1. Deduct total balloons from Completion
+                completionItem.amt -= totalBalloonAmt;
+                completionItem.percent = ((completionItem.amt / netPrice) * 100).toFixed(1) + '%';
+
+                // 2. Inject Balloon Items
+                balloons.forEach(b => {
+                    let existing = schedule.find(s => s.monthOffset === b.month && s.monthOffset !== 0);
+                    
+                    if (existing) {
+                        // Merge with existing installment on that exact month
+                        existing.desc = "Balloon Payment + Monthly Installment";
+                        existing.amt += b.amount;
+                        existing.percent = ((existing.amt / netPrice) * 100).toFixed(1) + '%';
+                    } else {
+                        // Create brand new entry in schedule
+                        schedule.push({
+                            monthOffset: b.month,
+                            date: addMonths(today, b.month),
+                            desc: 'Balloon Payment',
+                            percent: ((b.amount / netPrice) * 100).toFixed(1) + '%',
+                            amt: b.amount
+                        });
+                    }
+                });
+
+                // 3. Sort Chronologically
+                schedule.forEach((item, index) => item.originalIndex = index); // Track stability
+                schedule.sort((a, b) => {
+                    if (a.monthOffset === b.monthOffset) {
+                        return a.originalIndex - b.originalIndex;
+                    }
+                    return a.monthOffset - b.monthOffset;
+                });
+            }
+        }
+    } else {
+        // Hide error if zero balloon inputs
+        $('#balloon-error').addClass('hidden');
     }
 
     // Write to DOM
@@ -322,15 +420,28 @@ function calculate() {
     schedule.forEach((row, idx) => {
         const percentStr = row.percent !== '-' ? ` (${row.percent})` : '';
         const isUpfront = idx < 3;
-        const rowClass = isUpfront ? 'row-balloon' : 'row-milestone';
-        const amtColor = isUpfront ? 'var(--color-emerald-green)' : 'var(--color-egyptian-earth)';
-        const descColor = isUpfront ? '#64748B' : 'var(--color-egyptian-earth)';
+        const isBalloonHighlight = row.desc.includes('Balloon Payment');
+        
+        // Define Custom Styling Logic
+        let rowClass = 'row-milestone';
+        let amtColor = 'var(--color-egyptian-earth)';
+        let descColor = 'var(--color-egyptian-earth)';
+        
+        if (isUpfront) {
+            rowClass = 'row-balloon';
+            amtColor = 'var(--color-emerald-green)';
+            descColor = '#64748B';
+        } else if (isBalloonHighlight) {
+            // Give custom balloon rows a subtle visual distinction
+            amtColor = 'var(--color-emerald-green)';
+            descColor = 'var(--color-emerald-green)';
+        }
         
         rowsHTML += `
             <tr class="${rowClass}" style="color: var(--color-nor-de-vigne);">
                 <td class="p-4 uppercase text-[10px] font-black">${row.date}</td>
-                <td class="p-4 text-[10px] uppercase tracking-wide" style="color:${descColor}">${row.desc}${percentStr}</td>
-                <td class="p-4 text-right text-[11px] font-bold" style="color:${amtColor}">${formatter.format(row.amt)}</td>
+                <td class="p-4 text-[10px] uppercase tracking-wide font-bold" style="color:${descColor}">${row.desc}${percentStr}</td>
+                <td class="p-4 text-right text-[11px] font-black" style="color:${amtColor}">${formatter.format(row.amt)}</td>
             </tr>
         `;
     });
@@ -349,6 +460,7 @@ function calculate() {
         dpAmt, dldFee, adminFee
     };
 }
+
 
 // ==========================================
 // 3. PDF ENGINE (Version 2 structure adapted for V1 array outputs)
