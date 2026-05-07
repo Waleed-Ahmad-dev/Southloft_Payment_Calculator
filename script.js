@@ -420,7 +420,12 @@ function calculate() {
                     let existing = schedule.find(s => s.installmentNum === b.instNum);
                     
                     if (existing) {
-                        existing.desc = `Balloon Payment + ${existing.desc}`;
+                        // Keep descriptions concise to prevent PDF overlap 
+                        let shortDesc = existing.desc.replace('Installment', 'Inst.');
+                        if (!shortDesc.includes('Balloon')) {
+                            existing.desc = `Balloon + ${shortDesc}`;
+                        }
+                        
                         existing.amt += b.amount;
                         existing.percent = ((existing.amt / netPrice) * 100).toFixed(1) + '%';
                     }
@@ -446,7 +451,7 @@ function calculate() {
     schedule.forEach((row, idx) => {
         const percentStr = row.percent !== '-' ? ` (${row.percent})` : '';
         const isUpfront = idx < 3;
-        const isBalloonHighlight = row.desc.includes('Balloon Payment');
+        const isBalloonHighlight = row.desc.includes('Balloon');
         
         // Define Custom Styling Logic
         let rowClass = 'row-milestone';
@@ -664,19 +669,23 @@ async function generateProfessionalPDF() {
     const renderTwoColumns = data.schedule.length > 15;
     const colHeaderY = 30;
 
-    // Helper to draw columns
+    // Helper to draw columns with updated widths and alignments
     const drawColHeaders = (offsetX) => {
         const C = [
-            { label: 'TIMELINE',    x: offsetX,        w: 45 },
-            { label: 'DESCRIPTION', x: offsetX + 50,   w: 55 },
-            { label: '%',           x: offsetX + 95,   w: 15 },
-            { label: 'AMOUNT',      x: offsetX + 110,  w: 25 }
+            { label: 'TIMELINE',    x: offsetX,       align: 'left' },
+            { label: 'DESCRIPTION', x: offsetX + 28,  align: 'left' },
+            { label: '%',           x: offsetX + 105, align: 'right' },
+            { label: 'AMOUNT',      x: offsetX + 130, align: 'right' }
         ];
+        
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7);
         doc.setTextColor(...lightGreen);
         doc.setCharSpace(0);
-        C.forEach(c => doc.text(c.label, c.x, colHeaderY));
+        
+        C.forEach(c => {
+            doc.text(c.label, c.x, colHeaderY, { align: c.align });
+        });
 
         doc.setDrawColor(255, 255, 255);
         doc.setGState(new doc.GState({ opacity: 0.15 }));
@@ -700,14 +709,17 @@ async function generateProfessionalPDF() {
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(7.5);
             
-            // Draw Data
+            // Draw Data Left Aligned
             doc.setTextColor(...dimWhite);
-            doc.text(row.date, C[0].x, rowY + 5);
+            doc.text(row.date, C[0].x, rowY + 5, { align: C[0].align });
             
             doc.setTextColor(...offWhite);
-            doc.text(row.desc.toUpperCase(), C[1].x, rowY + 5);
-            doc.text(row.percent, C[2].x, rowY + 5);
-            doc.text(formatter.format(row.amt).replace('AED', '').trim(), C[3].x, rowY + 5);
+            doc.text(row.desc.toUpperCase(), C[1].x, rowY + 5, { align: C[1].align });
+            
+            // Draw Data Right Aligned
+            doc.text(row.percent, C[2].x, rowY + 5, { align: C[2].align });
+            const cleanAmt = formatter.format(row.amt).replace('AED', '').trim();
+            doc.text(cleanAmt, C[3].x, rowY + 5, { align: C[3].align });
 
             rowY += lineH;
         });
